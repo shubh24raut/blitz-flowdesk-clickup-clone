@@ -2,7 +2,6 @@
 
 import {
   ArrowLeft,
-  CalendarDays,
   CircleCheck,
   Copy,
   Ellipsis,
@@ -29,6 +28,7 @@ import { AssigneeButton, PriorityPicker, StagePicker, UserPicker } from "@/compo
 import { TagInput } from "@/components/shared/tag-input";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabCount, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
-import { inputClass } from "@/components/ui/input";
 import { dueTone, formatLong, formatRelative, fromInputDate, toInputDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { addAttachments } from "@/services/attachments";
@@ -235,24 +234,17 @@ export function TaskDetail({
               />
             </MetaField>
             <MetaField label="Due date" className="col-span-2 sm:col-span-1">
-              <div className="relative">
-                <CalendarDays
-                  className={cn(
-                    "pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2",
-                    tone === "overdue" ? "text-red-500" : "text-muted-foreground",
-                  )}
-                />
-                <input
-                  type="date"
-                  aria-label="Due date"
-                  value={toInputDate(task.dueDate)}
-                  onChange={(e) => {
-                    updateTask(task.id, { dueDate: fromInputDate(e.target.value) });
-                    toast.success(e.target.value ? `Due ${formatLong(fromInputDate(e.target.value))}` : "Due date cleared");
-                  }}
-                  className={cn(inputClass, "pl-9 text-sm font-medium", tone === "overdue" && "text-red-500")}
-                />
-              </div>
+              <DatePicker
+                aria-label="Due date"
+                value={toInputDate(task.dueDate)}
+                presets
+                placeholder="No due date"
+                tone={tone === "overdue" ? "danger" : undefined}
+                onChange={(value) => {
+                  updateTask(task.id, { dueDate: fromInputDate(value) });
+                  toast.success(value ? `Due ${formatLong(fromInputDate(value))}` : "Due date cleared");
+                }}
+              />
             </MetaField>
             {expanded && (
               <MetaField label="Stage" className="hidden lg:flex">
@@ -334,7 +326,7 @@ export function TaskDetail({
 
       {/* Sticky composer on phones */}
       {(tab === "details" || tab === "comments") && (
-        <div className="pb-safe border-t border-border bg-popover px-3 py-2.5 md:hidden">
+        <div className="border-t border-border bg-popover px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden">
           <CommentComposer projectId={task.projectId} taskId={task.id} placeholder="Add a comment…" showAvatar={false} />
         </div>
       )}

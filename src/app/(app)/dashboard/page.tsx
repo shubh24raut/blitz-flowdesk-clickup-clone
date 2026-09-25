@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoundCheck } from "@/components/ui/checkbox";
 import { Dialog, DialogBody, DialogContent } from "@/components/ui/dialog";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { formatLong, formatShort, toDate } from "@/lib/dates";
 import { cn, firstName } from "@/lib/utils";
@@ -100,11 +100,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <NativeSelect value={range} onChange={(e) => setRange(e.target.value as Range)} aria-label="Date range" className="w-36 [&_select]:h-9">
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="all">All Time</option>
-          </NativeSelect>
+          <Select size="sm" value={range} onValueChange={(v) => setRange(v as Range)} aria-label="Date range" className="w-36" options={[{ value: "week", label: "This Week" }, { value: "month", label: "This Month" }, { value: "all", label: "All Time" }]} />
           <Button variant="secondary" size="sm" className="h-9" onClick={openCreateProject}>
             <FolderKanban /> <span className="hidden sm:inline">Project</span>
           </Button>

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useProject } from "@/components/projects/use-project";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { Card, CardContent } from "@/components/ui/card";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getUsers } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
@@ -50,14 +50,7 @@ export default function ProjectActivityPage() {
               </button>
             ))}
           </div>
-          <NativeSelect value={member} onChange={(e) => setMember(e.target.value)} aria-label="Filter by member" className="sm:w-48">
-            <option value="all">Everyone</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </NativeSelect>
+          <Select size="sm" value={member} onValueChange={setMember} aria-label="Filter by member" className="sm:w-48" options={[{ value: "all", label: "Everyone" }, ...members.map((m) => ({ value: m.id, label: m.name }))]} />
         </div>
         <ActivityFeed activities={activities} emptyText="No activity matches these filters." />
       </CardContent>

@@ -36,7 +36,7 @@ export function formatRelative(value: string): string {
   return `${formatDistanceToNowStrict(date)} ago`;
 }
 
-/** yyyy-MM-dd for `<input type="date">`. */
+/** yyyy-MM-dd — the value format used by `DatePicker`. */
 export function toInputDate(value: string | null | undefined): string {
   if (!value) return "";
   const date = toDate(value);

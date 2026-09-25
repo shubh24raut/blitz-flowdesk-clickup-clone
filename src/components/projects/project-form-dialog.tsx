@@ -10,7 +10,9 @@ import { UserPicker } from "@/components/shared/pickers";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input, Label, Textarea } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Select } from "@/components/ui/select";
+import { LetterTile } from "@/components/shared/avatar";
 import { PROJECT_STATUSES } from "@/lib/constants";
 import { fromInputDate, toInputDate } from "@/lib/dates";
 import { cn, wait } from "@/lib/utils";
@@ -120,27 +122,62 @@ function ProjectForm({ project, defaultClientId, onDone }: { project?: Project; 
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Client" htmlFor="project-client">
-            <NativeSelect id="project-client" {...register("clientId")}>
-              <option value="">Internal (no client)</option>
-              {state.clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </NativeSelect>
+            <Controller
+              control={control}
+              name="clientId"
+              render={({ field }) => (
+                <Select
+                  id="project-client"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  options={[
+                    { value: "", label: "Internal (no client)" },
+                    ...state.clients.map((c) => ({
+                      value: c.id,
+                      textValue: c.name,
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <LetterTile name={c.name} color={c.color} solid size="sm" className="size-5 rounded-md text-[10px]" />
+                          {c.name}
+                        </span>
+                      ),
+                    })),
+                  ]}
+                />
+              )}
+            />
           </Field>
           <Field label="Status" htmlFor="project-status">
-            <NativeSelect id="project-status" {...register("status")}>
-              {PROJECT_STATUSES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </NativeSelect>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select
+                  id="project-status"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  options={PROJECT_STATUSES.map((s) => ({ value: s, label: s }))}
+                />
+              )}
+            />
           </Field>
           <Field label="Start date" htmlFor="project-start" required error={errors.startDate?.message}>
-            <Input id="project-start" type="date" {...register("startDate")} />
+            <Controller
+              control={control}
+              name="startDate"
+              render={({ field }) => (
+                <DatePicker id="project-start" value={field.value} onChange={field.onChange} clearable={false} invalid={!!errors.startDate} />
+              )}
+            />
           </Field>
           <Field label="Due date" htmlFor="project-due" required error={errors.dueDate?.message}>
-            <Input id="project-due" type="date" aria-invalid={!!errors.dueDate} {...register("dueDate")} />
+            <Controller
+              control={control}
+              name="dueDate"
+              render={({ field }) => (
+                <DatePicker id="project-due" value={field.value} onChange={field.onChange} clearable={false} invalid={!!errors.dueDate} />
+              )}
+            />
           </Field>
         </div>
         <div className="flex flex-col gap-1.5">

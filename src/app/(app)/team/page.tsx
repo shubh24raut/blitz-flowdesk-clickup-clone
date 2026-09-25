@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROLES } from "@/lib/constants";
 import { formatLong } from "@/lib/dates";
@@ -163,12 +163,7 @@ function TeamContent() {
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <SearchInput value={search} onChange={setSearch} placeholder="Search by name, email or title…" className="sm:w-80" />
-        <NativeSelect value={role} onChange={(e) => setRole(e.target.value as typeof role)} aria-label="Filter by role" className="sm:w-40 [&_select]:h-9">
-          <option value="all">All roles</option>
-          {ROLES.map((r) => (
-            <option key={r}>{r}</option>
-          ))}
-        </NativeSelect>
+        <Select size="sm" value={role} onValueChange={(v) => setRole(v as typeof role)} aria-label="Filter by role" className="sm:w-40" options={[{ value: "all", label: "All roles" }, ...ROLES.map((r) => ({ value: r, label: r }))]} />
       </div>
 
       {members.length === 0 ? (

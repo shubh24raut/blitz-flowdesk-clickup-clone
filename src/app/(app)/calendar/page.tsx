@@ -24,7 +24,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -118,16 +118,7 @@ export default function CalendarPage() {
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="Project" className="w-44 [&_select]:h-9">
-            <option value="all">All projects</option>
-            {state.projects
-              .filter((p) => p.status !== "Archived")
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-          </NativeSelect>
+          <Select size="sm" value={projectId} onValueChange={setProjectId} aria-label="Project" className="w-44" options={[{ value: "all", label: "All projects" }, ...state.projects.filter((p) => p.status !== "Archived").map((p) => ({ value: p.id, textValue: p.name, label: <span className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: p.color }} />{p.name}</span> }))]} />
           <label className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm shadow-card">
             <Switch checked={mineOnly} onCheckedChange={setMineOnly} />
             My tasks

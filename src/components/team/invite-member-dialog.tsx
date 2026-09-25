@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { wait } from "@/lib/utils";
 import { inviteMember } from "@/services/team";
 import { getState } from "@/store/store";
@@ -35,6 +35,7 @@ export function InviteMemberDialog({ open, onOpenChange }: { open: boolean; onOp
 function InviteForm({ onDone }: { onDone: () => void }) {
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", role: "Member", title: "" } });
@@ -57,10 +58,21 @@ function InviteForm({ onDone }: { onDone: () => void }) {
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Role" htmlFor="invite-role">
-            <NativeSelect id="invite-role" {...register("role")}>
-              <option value="Member">Member</option>
-              <option value="Admin">Admin</option>
-            </NativeSelect>
+            <Controller
+              control={control}
+              name="role"
+              render={({ field }) => (
+                <Select
+                  id="invite-role"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  options={[
+                    { value: "Member", label: "Member" },
+                    { value: "Admin", label: "Admin" },
+                  ]}
+                />
+              )}
+            />
           </Field>
           <Field label="Job title" htmlFor="invite-title">
             <Input id="invite-title" placeholder="Designer" {...register("title")} />

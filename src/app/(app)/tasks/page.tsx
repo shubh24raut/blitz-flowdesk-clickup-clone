@@ -10,7 +10,7 @@ import { SearchInput } from "@/components/shared/search-input";
 import { applyTaskFilters, EMPTY_FILTERS, TaskFilters, type TaskFilterState } from "@/components/tasks/task-filters";
 import { TaskListView, type TaskGroup } from "@/components/tasks/task-list-view";
 import { Button } from "@/components/ui/button";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PRIORITIES, PRIORITY_RANK, PRIORITY_STYLES } from "@/lib/constants";
 import { daysUntil } from "@/lib/dates";
@@ -118,20 +118,8 @@ function TasksContent() {
       <div className="flex flex-wrap items-center gap-2">
         <SearchInput value={search} onChange={setSearch} placeholder="Search tasks or tags…" className="w-full sm:w-64" />
         <TaskFilters value={filters} onChange={setFilters} users={state.users} />
-        <NativeSelect value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="Project" className="w-full sm:w-48 [&_select]:h-9">
-          <option value="all">All projects</option>
-          {liveProjects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </NativeSelect>
-        <NativeSelect value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} aria-label="Group by" className="w-full sm:w-44 [&_select]:h-9">
-          <option value="project">Group: Project</option>
-          <option value="phase">Group: Status</option>
-          <option value="priority">Group: Priority</option>
-          <option value="due">Group: Due date</option>
-        </NativeSelect>
+        <Select size="sm" value={projectId} onValueChange={setProjectId} aria-label="Project" className="w-full sm:w-48" options={[{ value: "all", label: "All projects" }, ...liveProjects.map((p) => ({ value: p.id, textValue: p.name, label: <span className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: p.color }} />{p.name}</span> }))]} />
+        <Select size="sm" value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)} aria-label="Group by" className="w-full sm:w-44" options={[{ value: "project", label: "Group: Project" }, { value: "phase", label: "Group: Status" }, { value: "priority", label: "Group: Priority" }, { value: "due", label: "Group: Due date" }]} />
         <span className="text-xs text-muted-foreground sm:ml-auto">{tasks.length} tasks</span>
       </div>
       <TaskListView groups={groups} showProject={groupBy !== "project"} showStage />

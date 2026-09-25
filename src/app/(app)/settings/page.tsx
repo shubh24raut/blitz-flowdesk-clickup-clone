@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -106,18 +106,15 @@ function SettingsContent() {
               </div>
               <div className="max-w-xs space-y-1.5">
                 <Label htmlFor="language">Language</Label>
-                <NativeSelect
+                <Select
                   id="language"
                   value={state.settings.language}
-                  onChange={(e) => {
-                    updateSettings({ language: e.target.value });
-                    toast.success(`Language set to ${e.target.value}`, { description: "Translations arrive with the backend release." });
+                  onValueChange={(language) => {
+                    updateSettings({ language });
+                    toast.success(`Language set to ${language}`, { description: "Translations arrive with the backend release." });
                   }}
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l}>{l}</option>
-                  ))}
-                </NativeSelect>
+                  options={LANGUAGES.map((l) => ({ value: l, label: l }))}
+                />
               </div>
             </TabsContent>
 

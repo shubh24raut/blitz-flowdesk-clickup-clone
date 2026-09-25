@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { pluralize } from "@/lib/utils";
 import { deleteStage } from "@/services/stages";
 import { getProjectStages, getStageTasks } from "@/store/selectors";
@@ -53,14 +53,22 @@ function DeleteStageDialogInner({ stage, onOpenChange }: { stage: Stage; onOpenC
       {!isLast && taskCount > 0 && (
         <div className="space-y-1.5">
           <Label htmlFor="move-target">Move tasks to</Label>
-          <NativeSelect id="move-target" value={target} onChange={(e) => setTarget(e.target.value)}>
-            {others.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-                {s.isCompleted ? " (completed)" : ""}
-              </option>
-            ))}
-          </NativeSelect>
+          <Select
+            id="move-target"
+            value={target}
+            onValueChange={setTarget}
+            options={others.map((s) => ({
+              value: s.id,
+              textValue: s.name,
+              label: (
+                <span className="flex items-center gap-2">
+                  <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+                  {s.name}
+                  {s.isCompleted && <span className="text-xs text-emerald-600">Completed</span>}
+                </span>
+              ),
+            }))}
+          />
         </div>
       )}
     </ConfirmDialog>

@@ -11,7 +11,7 @@ import { LetterTile } from "@/components/shared/avatar";
 import { PriorityBadge } from "@/components/shared/badges";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { PRIORITIES, PRIORITY_STYLES } from "@/lib/constants";
 import { daysUntil, formatShort, toDate } from "@/lib/dates";
@@ -91,19 +91,8 @@ export default function ReportsPage() {
         description="Delivery health across projects and people."
         actions={
           <div className="flex gap-2">
-            <NativeSelect value={projectId} onChange={(e) => setProjectId(e.target.value)} aria-label="Project" className="w-48 [&_select]:h-9">
-              <option value="all">All projects</option>
-              {liveProjects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </NativeSelect>
-            <NativeSelect value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} aria-label="Time range" className="w-36 [&_select]:h-9">
-              <option value={4}>Last 4 weeks</option>
-              <option value={8}>Last 8 weeks</option>
-              <option value={12}>Last 12 weeks</option>
-            </NativeSelect>
+            <Select size="sm" value={projectId} onValueChange={setProjectId} aria-label="Project" className="w-48" options={[{ value: "all", label: "All projects" }, ...liveProjects.map((p) => ({ value: p.id, textValue: p.name, label: <span className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: p.color }} />{p.name}</span> }))]} />
+            <Select size="sm" value={String(weeks)} onValueChange={(v) => setWeeks(Number(v))} aria-label="Time range" className="w-36" options={[4, 8, 12].map((w) => ({ value: String(w), label: `Last ${w} weeks` }))} />
           </div>
         }
       />

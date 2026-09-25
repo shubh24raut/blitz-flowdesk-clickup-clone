@@ -8,7 +8,7 @@ import { ColorPicker } from "@/components/shared/color-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input, Label, Textarea } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { CLIENT_STATUSES } from "@/lib/constants";
 import { wait } from "@/lib/utils";
 import { createClient, updateClient } from "@/services/clients";
@@ -111,11 +111,13 @@ function ClientForm({ client, onDone, onCreated }: { client?: Client; onDone: ()
             <Input id="client-industry" placeholder="SaaS" {...register("industry")} />
           </Field>
           <Field label="Status" htmlFor="client-status">
-            <NativeSelect id="client-status" {...register("status")}>
-              {CLIENT_STATUSES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </NativeSelect>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select id="client-status" value={field.value} onValueChange={field.onChange} options={CLIENT_STATUSES.map((s) => ({ value: s, label: s }))} />
+              )}
+            />
           </Field>
           <Field label="Address" htmlFor="client-address" className="sm:col-span-2">
             <Input id="client-address" placeholder="Street, City" {...register("address")} />

@@ -14,7 +14,8 @@ import { TagInput } from "@/components/shared/tag-input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input, Label } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Select } from "@/components/ui/select";
 import { PRIORITIES, PRIORITY_STYLES } from "@/lib/constants";
 import { fromInputDate, toInputDate } from "@/lib/dates";
 import { cn, formatBytes, wait } from "@/lib/utils";
@@ -173,30 +174,56 @@ function TaskForm({ defaults, onDone }: { defaults: TaskFormDefaults; onDone: ()
 
           <div className="space-y-4">
             <Field label="Project" htmlFor="task-project" required error={errors.projectId?.message}>
-              <NativeSelect
-                id="task-project"
-                {...register("projectId", {
-                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
-                    const first = getProjectStages(state, e.target.value)[0];
-                    setValue("stageId", first?.id ?? "", { shouldValidate: true });
-                  },
-                })}
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={control}
+                name="projectId"
+                render={({ field }) => (
+                  <Select
+                    id="task-project"
+                    value={field.value}
+                    onValueChange={(projectId) => {
+                      field.onChange(projectId);
+                      // Stage options depend on the project — default to its first stage.
+                      const first = getProjectStages(state, projectId)[0];
+                      setValue("stageId", first?.id ?? "", { shouldValidate: true });
+                    }}
+                    options={projects.map((p) => ({
+                      value: p.id,
+                      textValue: p.name,
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: p.color }} />
+                          {p.name}
+                        </span>
+                      ),
+                    }))}
+                  />
+                )}
+              />
             </Field>
             <Field label="Stage" htmlFor="task-stage" required error={errors.stageId?.message}>
-              <NativeSelect id="task-stage" {...register("stageId")}>
-                {stages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={control}
+                name="stageId"
+                render={({ field }) => (
+                  <Select
+                    id="task-stage"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select a stage"
+                    options={stages.map((s) => ({
+                      value: s.id,
+                      textValue: s.name,
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+                          {s.name}
+                        </span>
+                      ),
+                    }))}
+                  />
+                )}
+              />
             </Field>
             <div className="flex flex-col gap-1.5">
               <Label id="priority-label">Priority</Label>
@@ -238,7 +265,11 @@ function TaskForm({ defaults, onDone }: { defaults: TaskFormDefaults; onDone: ()
               />
             </div>
             <Field label="Due date" htmlFor="task-due">
-              <Input id="task-due" type="date" {...register("dueDate")} />
+              <Controller
+                control={control}
+                name="dueDate"
+                render={({ field }) => <DatePicker id="task-due" value={field.value} onChange={field.onChange} presets placeholder="Select date" />}
+              />
             </Field>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="task-tags">Tags</Label>

@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { NativeSelect } from "@/components/ui/native-select";
+import { Select } from "@/components/ui/select";
 import { PROJECT_STATUSES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { archiveProject, deleteProject } from "@/services/projects";
@@ -91,21 +91,8 @@ export default function ProjectsPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <SearchInput value={search} onChange={setSearch} placeholder="Search projects…" className="sm:w-60" />
           <div className="grid grid-cols-2 gap-2">
-            <NativeSelect value={clientId} onChange={(e) => setClientId(e.target.value)} aria-label="Filter by client" className="[&_select]:h-9">
-              <option value="all">All clients</option>
-              <option value="none">Internal</option>
-              {state.clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </NativeSelect>
-            <NativeSelect value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort projects" className="[&_select]:h-9">
-              <option value="recent">Newest</option>
-              <option value="due">Due date</option>
-              <option value="name">Name</option>
-              <option value="progress">Progress</option>
-            </NativeSelect>
+            <Select size="sm" value={clientId} onValueChange={setClientId} aria-label="Filter by client" className="" options={[{ value: "all", label: "All clients" }, { value: "none", label: "Internal" }, ...state.clients.map((c) => ({ value: c.id, label: c.name }))]} />
+            <Select size="sm" value={sort} onValueChange={(v) => setSort(v as Sort)} aria-label="Sort projects" className="" options={[{ value: "recent", label: "Newest" }, { value: "due", label: "Due date" }, { value: "name", label: "Name" }, { value: "progress", label: "Progress" }]} />
           </div>
         </div>
       </div>

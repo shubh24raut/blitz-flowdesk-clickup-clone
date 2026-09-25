@@ -78,7 +78,8 @@
   --animate-fade-in: fade-in 150ms ease-out;
   --animate-slide-in-right: slide-in-right 220ms cubic-bezier(0.22, 1, 0.36, 1);
   --animate-slide-in-bottom: slide-in-bottom 240ms cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-zoom-in: zoom-in 160ms ease-out;
+  --animate-zoom-in: zoom-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-pop-in: pop-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
   --animate-shimmer: shimmer 1.4s ease-in-out infinite;
 
   @keyframes fade-in {
@@ -93,9 +94,14 @@
     from { transform: translateY(24px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
+  /* Only scale/opacity: centering uses Tailwind's `translate` property, which must not be animated here. */
   @keyframes zoom-in {
-    from { transform: translate(-50%, -48%) scale(0.97); opacity: 0; }
-    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    from { transform: scale(0.96); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes pop-in {
+    from { transform: scale(0.97) translateY(-4px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
   }
   @keyframes shimmer {
     0%, 100% { opacity: 1; }
@@ -124,13 +130,6 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
-  input[type="date"]::-webkit-calendar-picker-indicator {
-    opacity: 0.5;
-    cursor: pointer;
-  }
-  .dark input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-  }
 }
 
 @layer utilities {
@@ -144,6 +143,7 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+  /* Safe-area only: do not combine with other bottom padding (it overrides it). */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
