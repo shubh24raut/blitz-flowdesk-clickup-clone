@@ -78,6 +78,7 @@ app/api/**/route.ts      (Route Handler — thin)
 ```text
 src/
 ├── app/
+│   ├── page.tsx           public landing page (components/landing: header, CTAs, product preview)
 │   ├── (auth)/            login, signup, forgot-password
 │   ├── (dashboard)/       authenticated shell (layout guards the session and sends users with no workspace to /onboarding)
 │   │   ├── dashboard/  clients/ clients/[clientId]/  projects/  projects/[projectId]/{overview,tasks,files,discussions,timeline,activity,settings}
@@ -158,7 +159,8 @@ AppState { version, session, activeOrganizationId, organizations, organizationMe
 
 **Across the app:** responsive layout (375 / 768 / 1024 / 1440+; icon sidebar on tablet, bottom nav + FAB on phones), light/dark/system theme, Ctrl/⌘+K search palette, notifications menu, toasts, empty states, skeletons, confirmation dialogs.
 
-- **Auth (fake):** sign in, sign up, forgot password, "Continue with Google", sign out, route guard.
+- **Landing page (`/`):** public, server-rendered marketing page — hero with an in-code product preview, features grid, spotlights (custom workflows, workspaces, time off), how it works, final CTA and footer. The header and CTAs are auth-aware ("Open FlowDesk" when signed in); "Try the live demo" signs in as the demo user.
+- **Auth (fake):** sign in, sign up, forgot password, "Continue with Google", sign out, route guard. New users go sign-up → `/onboarding` (create first workspace) → empty dashboard.
 - **Workspaces:** switcher at the top of the sidebar (avatar only on the tablet sidebar; "More → Workspace" sheet on phones) listing each workspace with your role there, a check on the current one and unread-notification counts for the others. Switching is instant (toast "Switched to …") and every screen follows; if you are on another workspace's project or client you are redirected to `/projects` or `/clients`, and a task drawer from the old workspace closes. **Create workspace** dialog (name, auto-generated editable slug with duplicate check, logo upload or initials, website) makes you Owner, adds default leave types and switches to it. `/onboarding` for users with no workspace ("I have an invitation" is prepared visually). `/settings/workspaces` lists your workspaces with role, member and project counts, and Open / Rename or change logo / Workspace settings / Leave / Delete (by role).
 - **Dashboard:** metrics (week / month / all time), task progress donut, recent activity, upcoming deadlines, My Tasks, project progress.
 - **Clients:** search, status filter, bulk select, CRUD, status changes; detail page with contacts, notes, projects and activity.

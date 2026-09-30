@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and sign in with:
+Open http://localhost:3000 for the public landing page (hero, features, workspaces, how it works). **Try the live demo** signs straight into the demo workspace; **Get started** goes to sign-up → onboarding. Or sign in with:
 
 | Email | Password |
 | --- | --- |
@@ -67,6 +67,7 @@ Not used: MongoDB, Prisma, Express, NestJS, Redux.
 ```
 src/
   app/
+    page.tsx           Public landing page (server-rendered; auth-aware header/CTAs in components/landing)
     (auth)/            login, signup, forgot-password
     (dashboard)/       Authenticated shell: dashboard, clients, projects, tasks, calendar, team, reports, settings (+ settings/workspaces)
     onboarding/        First workspace for users who belong to none
