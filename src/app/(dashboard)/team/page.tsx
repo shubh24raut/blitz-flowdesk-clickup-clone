@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, Info, LogOut, MailPlus, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
+import { ChevronDown, Ellipsis, Info, LogOut, MailPlus, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -44,6 +44,12 @@ const STATUS_STYLES: Record<MemberStatus, string> = {
 };
 
 const ON_LEAVE_CLASS = "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400";
+
+const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  Owner: "Full control, including workspace deletion",
+  Admin: "Manage members, settings and time off",
+  Member: "Work on projects and request leave",
+};
 
 const ROLE_STYLES: Record<Role, string> = {
   Owner: "bg-primary text-white",
@@ -108,10 +114,12 @@ function TeamContent() {
     else toast.success(message);
   }
 
-  function actions(user: Member) {
+  function actions(user: Member, withRoles: boolean) {
     const isMe = user.id === me.id;
     const manage = manageCheck(user);
-    const disabled = !isMe && roleOptions(user).length === 0 && !manage.ok;
+    // The desktop table has its own role dropdown; phones only have this menu, so it carries the roles there.
+    const showRoles = withRoles && canManage;
+    const disabled = !isMe && !manage.ok && !(showRoles && roleOptions(user).length > 0);
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -120,7 +128,7 @@ function TeamContent() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-60">
-          {canManage && (
+          {showRoles && (
             <>
               <DropdownMenuLabel>Role in {state.organization.name}</DropdownMenuLabel>
               <DropdownMenuRadioGroup value={user.role} onValueChange={(v) => changeRole(user, v as Role)}>
@@ -139,7 +147,7 @@ function TeamContent() {
           )}
           {!isMe && manage.ok && (
             <>
-              <DropdownMenuSeparator />
+              {showRoles && <DropdownMenuSeparator />}
               {user.status === "Invited" && (
                 <DropdownMenuItem onSelect={() => toast.success(`Invite re-sent to ${user.email}`)}>
                   <MailPlus /> Resend invite
@@ -160,7 +168,7 @@ function TeamContent() {
           )}
           {isMe && (
             <>
-              {canManage && <DropdownMenuSeparator />}
+              {showRoles && <DropdownMenuSeparator />}
               <DropdownMenuItem destructive onSelect={() => setLeaving(true)}>
                 <LogOut /> Leave workspace
               </DropdownMenuItem>
@@ -184,18 +192,34 @@ function TeamContent() {
       );
     }
     return (
-      <select
-        value={u.role}
-        onChange={(e) => changeRole(u, e.target.value as Role)}
-        aria-label={`Role for ${u.name}`}
-        className={cn("h-7 cursor-pointer rounded-full border-0 px-2.5 text-xs font-medium outline-none", ROLE_STYLES[u.role])}
-      >
-        {ROLES.filter((r) => r === u.role || options.includes(r)).map((r) => (
-          <option key={r} value={r}>
-            {r}
-          </option>
-        ))}
-      </select>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Role for ${u.name}: ${u.role}`}
+            className={cn(
+              "inline-flex h-7 items-center gap-1 rounded-full pl-2.5 pr-2 text-xs font-medium outline-none transition hover:brightness-95 focus-visible:ring-3 focus-visible:ring-primary/25 data-[state=open]:ring-3 data-[state=open]:ring-primary/20",
+              ROLE_STYLES[u.role],
+            )}
+          >
+            {u.role}
+            <ChevronDown className="size-3.5 opacity-70" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-72">
+          <DropdownMenuLabel>Role in {state.organization.name}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={u.role} onValueChange={(v) => changeRole(u, v as Role)}>
+            {ROLES.filter((r) => r === u.role || options.includes(r)).map((r) => (
+              <DropdownMenuRadioItem key={r} value={r} className="items-start py-2">
+                <span className="min-w-0">
+                  <span className="block font-medium">{r}</span>
+                  <span className="block text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[r]}</span>
+                </span>
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
@@ -283,7 +307,7 @@ function TeamContent() {
                       <td className="py-3 text-center tabular-nums">{s?.open ?? 0}</td>
                       <td className="hidden py-3 text-muted-foreground xl:table-cell">{formatLong(u.joinedAt)}</td>
                       <td className="py-3 pr-5">
-                        <div className="flex justify-end">{actions(u)}</div>
+                        <div className="flex justify-end">{actions(u, false)}</div>
                       </td>
                     </tr>
                   );
@@ -312,7 +336,7 @@ function TeamContent() {
                       </span>
                     </div>
                   </div>
-                  {actions(u)}
+                  {actions(u, true)}
                 </li>
               );
             })}
