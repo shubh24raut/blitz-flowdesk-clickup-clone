@@ -35,6 +35,19 @@ export function uniqueSlug(base: string, taken: Iterable<string>): string {
 
 /* ----------------------------------- Roles ----------------------------------- */
 
+/** Better Auth's organization plugin stores roles lowercase; the UI uses `Owner` | `Admin` | `Member`. */
+export type DbRole = "owner" | "admin" | "member";
+
+export function roleFromDb(role: string): Role {
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
+  return "Member";
+}
+
+export function roleToDb(role: Role): DbRole {
+  return role.toLowerCase() as DbRole;
+}
+
 export const LAST_OWNER_MESSAGE =
   "Every workspace must have at least one Owner. Assign another Owner before changing this role.";
 
