@@ -90,7 +90,7 @@ export function seedLeaveRequests(): Unscoped<LeaveRequest>[] {
       days: countLeaveDays({ start: span.startDate, end: span.endDate, halfDay, workingDays: SEED_WORKING_DAYS, daysOff }),
       reason,
       status,
-      reviewerId: reviewed ? "u_sachin" : null,
+      reviewerId: reviewed ? "u_shubham" : null,
       reviewNote: "",
       reviewedAt: reviewed ? hoursAgo(30) : null,
       createdAt: daysFromNow(Math.min(offset, 0) - 7),
@@ -99,12 +99,12 @@ export function seedLeaveRequests(): Unscoped<LeaveRequest>[] {
   };
 
   return [
-    make("lr_venky_sick", "u_venky", "lt_sick", 0, 1, "Approved", "Down with a fever.", { reviewerId: null, reviewedAt: hoursAgo(3) }),
-    make("lr_priya_trip", "u_priya", "lt_earned", 5, 4, "Approved", "Family trip to Kerala."),
-    make("lr_mayuri", "u_mayuri", "lt_casual", 12, 2, "Pending", "Cousin's wedding."),
-    make("lr_rahul", "u_rahul", "lt_earned", 19, 5, "Pending", "Visiting my parents in Jaipur."),
-    make("lr_aditya_half", "u_aditya", "lt_casual", 3, 1, "Pending", "Bank appointment in the morning.", { halfDay: true }),
-    make("lr_sachin_past", "u_sachin", "lt_casual", -34, 2, "Approved", "Long weekend.", { reviewerId: "u_aditya" }),
-    make("lr_neha_rejected", "u_neha", "lt_casual", -10, 3, "Rejected", "Short break.", { reviewNote: "Release week — can we move this by a week?" }),
+    make("lr_karan_sick", "u_karan", "lt_sick", 0, 1, "Approved", "Down with a fever.", { reviewerId: null, reviewedAt: hoursAgo(3) }),
+    make("lr_isha_trip", "u_isha", "lt_earned", 5, 4, "Approved", "Family trip to Kerala."),
+    make("lr_ananya", "u_ananya", "lt_casual", 12, 2, "Pending", "Cousin's wedding."),
+    make("lr_vikram", "u_vikram", "lt_earned", 19, 5, "Pending", "Visiting my parents in Jaipur."),
+    make("lr_rohan_half", "u_rohan", "lt_casual", 3, 1, "Pending", "Bank appointment in the morning.", { halfDay: true }),
+    make("lr_shubham_past", "u_shubham", "lt_casual", -34, 2, "Approved", "Long weekend.", { reviewerId: "u_rohan" }),
+    make("lr_sneha_rejected", "u_sneha", "lt_casual", -10, 3, "Rejected", "Short break.", { reviewNote: "Release week — can we move this by a week?" }),
   ];
 }

@@ -1,5 +1,5 @@
 import { migrateState } from "@/store/migrations";
-import { createSeedState } from "@/store/seed";
+import { createSeedState, CURRENT_USER_ID } from "@/store/seed";
 import type { AppState } from "@/types";
 
 /**
@@ -123,8 +123,11 @@ function onStorage(event: StorageEvent) {
 
 /** Restores the original demo data but keeps the user signed in. */
 export function resetState() {
+  const seed = createSeedState();
   const session = getState().session;
-  state = { ...createSeedState(), session };
+  // Accounts that aren't in the fresh demo data (e.g. renamed or signed-up users) continue as the demo owner.
+  const userId = session && seed.users.some((u) => u.id === session.userId) ? session.userId : CURRENT_USER_ID;
+  state = { ...seed, session: session && { ...session, userId } };
   persist();
   emit();
 }

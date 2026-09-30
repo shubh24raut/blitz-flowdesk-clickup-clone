@@ -32,12 +32,12 @@ const ws = () => selectWorkspace(getState());
 beforeEach(() => {
   window.localStorage.clear();
   setState(() => createSeedState());
-  signIn("demo@flowdesk.com"); // Sachin: Owner of Dream Kasper, Member of Northwind
+  signIn("demo@flowdesk.com"); // Shubham: Owner of Dream Kasper, Member of Northwind
 });
 
 describe("memberships", () => {
   it("lets one user belong to several organizations", () => {
-    const workspaces = getUserWorkspaces(getState(), "u_sachin");
+    const workspaces = getUserWorkspaces(getState(), "u_shubham");
     expect(workspaces.map((w) => [w.organization.name, w.membership.role])).toEqual([
       ["Dream Kasper LLP", "Owner"],
       ["Northwind Studio", "Member"],
@@ -52,7 +52,7 @@ describe("memberships", () => {
     expect(isCurrentUserAdmin(getState())).toBe(false);
     expect(ws().currentUser.role).toBe("Member");
     // A Member can't manage the Northwind owner.
-    const result = removeOrganizationMember(membershipId(NORTHWIND_ID, "u_olivia"));
+    const result = removeOrganizationMember(membershipId(NORTHWIND_ID, "u_chloe"));
     expect(result.ok).toBe(false);
   });
 
@@ -111,7 +111,7 @@ describe("switching and isolation", () => {
     expect(nw.comments.every((c) => nwProjectIds.has(c.projectId))).toBe(true);
     expect(nw.activities.every((a) => a.organizationId === NORTHWIND_ID)).toBe(true);
     expect(nw.notifications.every((n) => n.organizationId === NORTHWIND_ID)).toBe(true);
-    expect(nw.users.map((u) => u.id).sort()).toEqual(["u_olivia", "u_sachin"]);
+    expect(nw.users.map((u) => u.id).sort()).toEqual(["u_chloe", "u_shubham"]);
   });
 
   it("keeps time-off policies separate", () => {
@@ -143,13 +143,13 @@ describe("switching and isolation", () => {
 
 describe("owner rule", () => {
   it("won't demote, remove or let the final owner leave", () => {
-    const sachin = membershipId(DREAM_KASPER_ID, "u_sachin");
-    expect(updateOrganizationMemberRole(sachin, "Admin")).toEqual({ ok: false, error: LAST_OWNER_MESSAGE });
+    const shubham = membershipId(DREAM_KASPER_ID, "u_shubham");
+    expect(updateOrganizationMemberRole(shubham, "Admin")).toEqual({ ok: false, error: LAST_OWNER_MESSAGE });
     expect(leaveOrganization(DREAM_KASPER_ID).ok).toBe(false);
 
     // Once someone else is an Owner, stepping down works.
-    expect(updateOrganizationMemberRole(membershipId(DREAM_KASPER_ID, "u_aditya"), "Owner").ok).toBe(true);
-    expect(updateOrganizationMemberRole(sachin, "Admin").ok).toBe(true);
+    expect(updateOrganizationMemberRole(membershipId(DREAM_KASPER_ID, "u_rohan"), "Owner").ok).toBe(true);
+    expect(updateOrganizationMemberRole(shubham, "Admin").ok).toBe(true);
   });
 });
 
@@ -164,7 +164,7 @@ describe("creating a workspace", () => {
     const created = ws();
     expect(created.projects).toEqual([]);
     expect(created.clients).toEqual([]);
-    expect(created.users.map((u) => u.id)).toEqual(["u_sachin"]);
+    expect(created.users.map((u) => u.id)).toEqual(["u_shubham"]);
     expect(created.leaveTypes.length).toBeGreaterThan(0);
 
     // Dream Kasper's data is untouched.
@@ -248,9 +248,9 @@ describe("localStorage migration", () => {
     expect(migrated.activeOrganizationId).toBe(DREAM_KASPER_ID);
 
     // Roles moved from users onto memberships.
-    const sachin = migrated.organizationMembers.find((m) => m.userId === "u_sachin");
-    expect(sachin).toMatchObject({ organizationId: DREAM_KASPER_ID, role: "Owner", status: "Active" });
-    expect(migrated.users.find((u) => u.id === "u_sachin")).not.toHaveProperty("role");
+    const shubham = migrated.organizationMembers.find((m) => m.userId === "u_shubham");
+    expect(shubham).toMatchObject({ organizationId: DREAM_KASPER_ID, role: "Owner", status: "Active" });
+    expect(migrated.users.find((u) => u.id === "u_shubham")).not.toHaveProperty("role");
 
     // Everything is still visible, exactly as before.
     const before = selectWorkspace(seed);

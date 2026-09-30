@@ -37,7 +37,7 @@ test("switching workspace changes the projects", async ({ page }) => {
   await expect(project(page, "Bloom Bakery Rebrand")).toBeVisible();
   await expect(project(page, "Website Redesign")).toHaveCount(0);
 
-  // Sachin is only a Member here, so the Team page offers no invite button.
+  // Shubham is only a Member here, so the Team page offers no invite button.
   await page.goto("/team");
   await expect(page.getByText("Everyone in Northwind Studio.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Invite Member" })).toHaveCount(0);
@@ -83,7 +83,7 @@ test("creating a workspace switches to it, and Dream Kasper stays intact", async
   await expect(project(page, "Website Redesign")).toBeVisible();
   await expect(project(page, "Side Quest")).toHaveCount(0);
   await page.goto("/team");
-  await expect(page.getByRole("table").getByText("Aditya Patil")).toBeVisible();
+  await expect(page.getByRole("table").getByText("Rohan Kulkarni")).toBeVisible();
 });
 
 test("the workspace survives a reload", async ({ page }) => {

@@ -19,7 +19,7 @@ Open http://localhost:3000 and sign in with:
 
 Any valid-looking email and password (6+ characters) also works. An existing user's email signs in as that user; an unknown email creates a new account with **no workspace**, which lands on the onboarding screen to create one. "Continue with Google" signs in as the demo user.
 
-The demo user (Sachin) is **Owner** of *Dream Kasper LLP* and a **Member** of the small *Northwind Studio* workspace, so roles differ per workspace. `olivia@northwind.studio` signs in as Northwind's Owner, who can't see Dream Kasper at all.
+The demo user (Shubham) is **Owner** of *Dream Kasper LLP* and a **Member** of the small *Northwind Studio* workspace, so roles differ per workspace. `chloe@northwind.studio` signs in as Northwind's Owner, who can't see Dream Kasper at all.
 
 Other scripts:
 

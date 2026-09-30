@@ -42,14 +42,14 @@ test("request a day off and see it pending", async ({ page }) => {
 
 test("an owner approves a teammate's request", async ({ page }) => {
   await page.goto("/time-off?tab=approvals");
-  const row = page.getByRole("listitem").filter({ hasText: "Mayuri Shah" });
+  const row = page.getByRole("listitem").filter({ hasText: "Ananya Joshi" });
   await row.getByRole("button", { name: "Approve", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Approve leave" });
   await dialog.getByRole("button", { name: "Approve", exact: true }).click();
 
-  await expect(page.getByText("Mayuri Shah's leave approved")).toBeVisible();
+  await expect(page.getByText("Ananya Joshi's leave approved")).toBeVisible();
   const decisions = page.locator("section", { has: page.getByRole("heading", { name: "Recent decisions" }) });
-  await expect(decisions.getByText("Mayuri Shah")).toBeVisible();
+  await expect(decisions.getByText("Ananya Joshi")).toBeVisible();
 });
 
 test("an owner can't approve their own request", async ({ page }) => {
@@ -57,7 +57,7 @@ test("an owner can't approve their own request", async ({ page }) => {
   await page.getByRole("dialog").getByRole("button", { name: "Send request" }).click();
   await expect(page.getByText("Request sent for approval")).toBeVisible();
   await page.getByRole("tab", { name: /Approvals/ }).click();
-  const own = page.getByRole("listitem").filter({ hasText: "Sachin Darde" });
+  const own = page.getByRole("listitem").filter({ hasText: "Shubham Raut" });
   await expect(own.getByText("Needs another admin")).toBeVisible();
   await expect(own.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
 });
@@ -90,7 +90,7 @@ test("reviewers see which days were not counted", async ({ page }) => {
 
   await page.getByRole("tab", { name: /Approvals/ }).click();
   const waiting = page.locator("section", { has: page.getByRole("heading", { name: "Waiting for approval" }) });
-  const row = waiting.getByRole("listitem").filter({ hasText: "Sachin Darde" });
+  const row = waiting.getByRole("listitem").filter({ hasText: "Shubham Raut" });
   await expect(row.getByText("· 2 days")).toBeVisible();
   await expect(row.getByText("Not counted: 2 weekend days")).toBeVisible();
 });
@@ -98,22 +98,22 @@ test("reviewers see which days were not counted", async ({ page }) => {
 test("clicking a request opens its details, and approving from there works", async ({ page }) => {
   await page.goto("/time-off?tab=approvals");
   const waiting = page.locator("section", { has: page.getByRole("heading", { name: "Waiting for approval" }) });
-  await waiting.getByRole("button", { name: /Rahul Mehta/ }).click();
+  await waiting.getByRole("button", { name: /Vikram Desai/ }).click();
 
-  await expect(page).toHaveURL(/leave=lr_rahul/);
-  const drawer = page.getByRole("dialog", { name: "Rahul Mehta's leave" });
+  await expect(page).toHaveURL(/leave=lr_vikram/);
+  const drawer = page.getByRole("dialog", { name: "Vikram Desai's leave" });
   await expect(drawer.getByText("Earned leave balance")).toBeVisible();
   await expect(drawer.getByRole("heading", { name: "Day by day" })).toBeVisible();
-  await expect(drawer.getByText("Requested by Rahul Mehta")).toBeVisible();
+  await expect(drawer.getByText("Requested by Vikram Desai")).toBeVisible();
 
   await drawer.getByRole("button", { name: "Approve", exact: true }).click();
   await page.getByRole("dialog", { name: "Approve leave" }).getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(drawer.getByText("Approved by Sachin Darde")).toBeVisible();
+  await expect(drawer.getByText("Approved by Shubham Raut")).toBeVisible();
   await expect(drawer.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
 
   // The link survives a reload.
   await page.reload();
-  await expect(page.getByRole("dialog", { name: "Rahul Mehta's leave" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Vikram Desai's leave" })).toBeVisible();
 });
 
 test("holidays tab lists national and company holidays", async ({ page }) => {

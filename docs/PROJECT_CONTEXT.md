@@ -21,7 +21,7 @@ FlowDesk is **multi-organization**: a user can belong to several workspaces (org
 | UI / frontend | **Done and working.** Every feature below is usable. |
 | Data | **Mock only.** All data lives in the browser (`localStorage`) through a small client-side store. There is no API and no database yet. |
 | Backend | **Scaffolded, not implemented.** Folders and placeholder files exist for route handlers, controllers, services, repositories, Drizzle schemas and integrations. They contain only a one-line comment plus `export {};`. |
-| Auth | **Fake.** Any existing user's email signs you in as that user (any 6+ character password). `demo@flowdesk.com` / `password` signs in as Sachin. An unknown email creates an account with no workspace and goes to onboarding. |
+| Auth | **Fake.** Any existing user's email signs you in as that user (any 6+ character password). `demo@flowdesk.com` / `password` signs in as Shubham. An unknown email creates an account with no workspace and goes to onboarding. |
 | Workspaces | **Done (mock).** Memberships with per-workspace roles, workspace switcher, create / rename / leave / delete workspace, onboarding for users with no workspace. |
 | Tests | Vitest unit tests (pure logic, organization scoping, role rules, localStorage migration) and Playwright end-to-end tests (sign-in, time off, workspace switching and creation) pass. |
 
@@ -206,7 +206,7 @@ Roles are **per workspace** (on `OrganizationMember`), resolved from `currentUse
 | Admin | Edit workspace settings, manage team (invite, change Admin/Member roles, deactivate, remove — not Owners), approve leave, manage time-off policies and holidays. |
 | Member | Everything project-related; request and cancel their own leave; view holidays and who's out. No Approvals or Policies tabs. |
 
-Demo users (any 6+ character password): `demo@flowdesk.com` (Sachin Darde — Owner of Dream Kasper LLP, Member of Northwind Studio), `aditya@dreamkasper.com` (Admin), `neha@dreamkasper.com` (Admin), `mayuri@`, `venky@`, `priya@`, `rahul@dreamkasper.com` (Members), `olivia@northwind.studio` (Owner of Northwind Studio only).
+Demo users (any 6+ character password): `demo@flowdesk.com` (Shubham Raut — Owner of Dream Kasper LLP, Member of Northwind Studio), `rohan@dreamkasper.com` (Admin), `sneha@dreamkasper.com` (Admin), `ananya@`, `karan@`, `isha@`, `vikram@dreamkasper.com` (Members), `chloe@northwind.studio` (Owner of Northwind Studio only).
 
 ## 8. Conventions
 

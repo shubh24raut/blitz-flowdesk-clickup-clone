@@ -17,7 +17,7 @@ import { daysFromNow, hoursAgo } from "./time";
 
 /**
  * A deliberately tiny second workspace for trying organization switching.
- * Sachin is only a Member here, so role-dependent UI differs from Dream Kasper.
+ * Shubham is only a Member here, so role-dependent UI differs from Dream Kasper.
  */
 
 const UK_CALENDAR_ID = "hc_nw_england";
@@ -39,9 +39,9 @@ export function seedNorthwindOrganization(): Organization {
 export function seedNorthwindUsers(): User[] {
   return [
     {
-      id: "u_olivia",
-      name: "Olivia Bennett",
-      email: "olivia@northwind.studio",
+      id: "u_chloe",
+      name: "Chloe Harper",
+      email: "chloe@northwind.studio",
       title: "Creative Director",
       color: "#0EA5E9",
       createdAt: daysFromNow(-90),
@@ -51,8 +51,8 @@ export function seedNorthwindUsers(): User[] {
 
 export function seedNorthwindMembers(): OrganizationMember[] {
   return [
-    membership(NORTHWIND_ID, "u_olivia", { role: "Owner", status: "Active", joinedAt: daysFromNow(-90) }),
-    membership(NORTHWIND_ID, "u_sachin", { role: "Member", status: "Active", joinedAt: daysFromNow(-40) }),
+    membership(NORTHWIND_ID, "u_chloe", { role: "Owner", status: "Active", joinedAt: daysFromNow(-90) }),
+    membership(NORTHWIND_ID, "u_shubham", { role: "Member", status: "Active", joinedAt: daysFromNow(-40) }),
   ];
 }
 
@@ -85,7 +85,7 @@ export function seedNorthwindData() {
       color: "#F97316",
       startDate: daysFromNow(-21),
       dueDate: daysFromNow(28),
-      memberIds: ["u_olivia", "u_sachin"],
+      memberIds: ["u_chloe", "u_shubham"],
       starred: false,
       key: "BB",
       createdAt: daysFromNow(-21),
@@ -120,26 +120,26 @@ export function seedNorthwindData() {
     dueDate: daysFromNow(due),
     tags: [],
     checklist: [],
-    createdById: "u_olivia",
+    createdById: "u_chloe",
     createdAt: daysFromNow(-20),
     updatedAt: hoursAgo(order * 5 + 2),
     completedAt: stageId === "s_nw_done" ? daysFromNow(-4) : null,
   });
 
   const tasks: Task[] = [
-    task("t_nw_1", 100, "s_nw_todo", 0, "Packaging mock-ups", ["u_olivia"], 12),
-    task("t_nw_2", 101, "s_nw_doing", 0, "Logo concepts round 2", ["u_sachin"], 4, "High"),
-    task("t_nw_3", 102, "s_nw_doing", 1, "Ordering site wireframes", ["u_sachin", "u_olivia"], 9),
-    task("t_nw_4", 103, "s_nw_done", 0, "Brand discovery workshop", ["u_olivia"], -6),
+    task("t_nw_1", 100, "s_nw_todo", 0, "Packaging mock-ups", ["u_chloe"], 12),
+    task("t_nw_2", 101, "s_nw_doing", 0, "Logo concepts round 2", ["u_shubham"], 4, "High"),
+    task("t_nw_3", 102, "s_nw_doing", 1, "Ordering site wireframes", ["u_shubham", "u_chloe"], 9),
+    task("t_nw_4", 103, "s_nw_done", 0, "Brand discovery workshop", ["u_chloe"], -6),
   ];
 
   const activities = inOrganization<Activity>(NORTHWIND_ID, [
-    { id: "ac_nw_1", actorId: "u_olivia", action: "moved", target: "Logo concepts round 2", from: "To Do", to: "In Progress", projectId: "p_nw_bloom", taskId: "t_nw_2", clientId: null, createdAt: hoursAgo(6) },
-    { id: "ac_nw_2", actorId: "u_olivia", action: "created the project", target: "Bloom Bakery Rebrand", projectId: "p_nw_bloom", taskId: null, clientId: "c_nw_bloom", createdAt: daysFromNow(-21) },
+    { id: "ac_nw_1", actorId: "u_chloe", action: "moved", target: "Logo concepts round 2", from: "To Do", to: "In Progress", projectId: "p_nw_bloom", taskId: "t_nw_2", clientId: null, createdAt: hoursAgo(6) },
+    { id: "ac_nw_2", actorId: "u_chloe", action: "created the project", target: "Bloom Bakery Rebrand", projectId: "p_nw_bloom", taskId: null, clientId: "c_nw_bloom", createdAt: daysFromNow(-21) },
   ]);
 
   const notifications = inOrganization<AppNotification>(NORTHWIND_ID, [
-    { id: "n_nw_1", actorId: "u_olivia", message: "assigned you to “Logo concepts round 2”", href: "/projects/p_nw_bloom/tasks?task=t_nw_2", read: false, createdAt: hoursAgo(6) },
+    { id: "n_nw_1", actorId: "u_chloe", message: "assigned you to “Logo concepts round 2”", href: "/projects/p_nw_bloom/tasks?task=t_nw_2", read: false, createdAt: hoursAgo(6) },
   ]);
 
   const holidayCalendars = inOrganization<HolidayCalendar>(NORTHWIND_ID, [
