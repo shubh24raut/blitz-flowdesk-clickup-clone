@@ -13,8 +13,10 @@ import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { DEMO_CREDENTIALS } from "@/constants";
+import { authClient } from "@/lib/auth-client";
 import { firstName, wait } from "@/lib/utils";
-import { signIn, signInWithGoogle } from "@/store/actions/auth";
+import { signIn, signInAccount, signInWithGoogle } from "@/store/actions/auth";
+import { isDemoLoginAllowed } from "../actions";
 
 const schema = z.object({
   email: z.email("Enter a valid email address"),
@@ -30,14 +32,33 @@ export default function LoginPage() {
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
 
+  /**
+   * Real accounts (Better Auth) sign in with their real password. Seeded demo people
+   * without a real account can still use any password to explore the mock data.
+   */
   async function onSubmit(values: FormValues) {
-    await wait(600);
-    const user = signIn(values.email);
-    toast.success(`Welcome back, ${firstName(user.name)}!`);
-    router.push("/dashboard");
+    const { data, error } = await authClient.signIn.email({ email: values.email, password: values.password });
+    if (data) {
+      const user = signInAccount({ email: data.user.email, name: data.user.name });
+      toast.success(`Welcome back, ${firstName(user.name)}!`);
+      router.push("/dashboard");
+      return;
+    }
+    if (error?.status === 429) {
+      toast.error("Too many attempts — please wait a minute and try again.");
+      return;
+    }
+    if (await isDemoLoginAllowed(values.email)) {
+      const user = signIn(values.email);
+      toast.success(`Welcome back, ${firstName(user.name)}!`, { description: "Signed in to the demo data." });
+      router.push("/dashboard");
+      return;
+    }
+    setError("password", { message: "Incorrect email or password." });
   }
 
   async function onGoogle() {
@@ -100,7 +121,7 @@ export default function LoginPage() {
         <span>
           <span className="block font-semibold text-primary">Use the demo account</span>
           <span className="text-muted-foreground">
-            {DEMO_CREDENTIALS.email} · {DEMO_CREDENTIALS.password} — or sign in with any email.
+            {DEMO_CREDENTIALS.email} · {DEMO_CREDENTIALS.password} — explore FlowDesk with sample data.
           </span>
         </span>
       </button>

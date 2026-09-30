@@ -30,8 +30,8 @@ function startSession(userId: string) {
 }
 
 /**
- * Fake sign-in. The demo account (or any existing user's email) signs in as
- * that user; any other valid email creates a new account with no workspace yet.
+ * Demo sign-in (any password). The login page only uses it for seeded demo emails
+ * without a real account — see `isDemoLoginAllowed`. Real accounts use `signInAccount`.
  */
 export function signIn(email: string): User {
   const normalized = email.trim().toLowerCase();
@@ -45,6 +45,22 @@ export function signIn(email: string): User {
     return existing;
   }
   return signUp(nameFromEmail(normalized), normalized);
+}
+
+/**
+ * Enters the mock app for a real (Better Auth) account. A returning account finds
+ * the mock person created on its first sign-in (with the workspaces it made); a new
+ * account gets a fresh person with no workspaces, so it lands on onboarding.
+ * Demo people use reserved `.test` emails, so a real account never takes one over.
+ */
+export function signInAccount(account: { email: string; name: string }): User {
+  const normalized = account.email.trim().toLowerCase();
+  const existing = getState().users.find((u) => u.email.toLowerCase() === normalized);
+  if (existing) {
+    startSession(existing.id);
+    return existing;
+  }
+  return signUp(account.name, normalized);
 }
 
 export function signUp(name: string, email: string): User {

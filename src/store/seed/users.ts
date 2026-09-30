@@ -24,7 +24,7 @@ export function seedUsers(): User[] {
     {
       id: "u_shubham",
       name: "Shubham Raut",
-      email: "shubham@dreamkasper.com",
+      email: "shubham@dreamkasper.test",
       title: "Founder & Product Lead",
       color: "#5B5CF6",
       createdAt: daysFromNow(-720),
@@ -32,7 +32,7 @@ export function seedUsers(): User[] {
     {
       id: "u_rohan",
       name: "Rohan Kulkarni",
-      email: "rohan@dreamkasper.com",
+      email: "rohan@dreamkasper.test",
       title: "Senior Full-stack Developer",
       color: "#0EA5E9",
       createdAt: daysFromNow(-540),
@@ -40,7 +40,7 @@ export function seedUsers(): User[] {
     {
       id: "u_ananya",
       name: "Ananya Joshi",
-      email: "ananya@dreamkasper.com",
+      email: "ananya@dreamkasper.test",
       title: "Frontend Developer",
       color: "#EC4899",
       createdAt: daysFromNow(-400),
@@ -48,7 +48,7 @@ export function seedUsers(): User[] {
     {
       id: "u_karan",
       name: "Karan Iyer",
-      email: "karan@dreamkasper.com",
+      email: "karan@dreamkasper.test",
       title: "Backend Developer",
       color: "#F59E0B",
       createdAt: daysFromNow(-380),
@@ -56,7 +56,7 @@ export function seedUsers(): User[] {
     {
       id: "u_isha",
       name: "Isha Menon",
-      email: "isha@dreamkasper.com",
+      email: "isha@dreamkasper.test",
       title: "UI/UX Designer",
       color: "#8B5CF6",
       createdAt: daysFromNow(-300),
@@ -64,7 +64,7 @@ export function seedUsers(): User[] {
     {
       id: "u_vikram",
       name: "Vikram Desai",
-      email: "vikram@dreamkasper.com",
+      email: "vikram@dreamkasper.test",
       title: "QA Engineer",
       color: "#22C55E",
       createdAt: daysFromNow(-210),
@@ -72,7 +72,7 @@ export function seedUsers(): User[] {
     {
       id: "u_sneha",
       name: "Sneha Pillai",
-      email: "sneha@dreamkasper.com",
+      email: "sneha@dreamkasper.test",
       title: "Project Manager",
       color: "#06B6D4",
       createdAt: daysFromNow(-180),
@@ -80,7 +80,7 @@ export function seedUsers(): User[] {
     {
       id: "u_dev",
       name: "Dev Malhotra",
-      email: "dev@dreamkasper.com",
+      email: "dev@dreamkasper.test",
       title: "DevOps Engineer",
       color: "#F97316",
       createdAt: daysFromNow(-3),

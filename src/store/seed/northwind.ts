@@ -41,7 +41,7 @@ export function seedNorthwindUsers(): User[] {
     {
       id: "u_chloe",
       name: "Chloe Harper",
-      email: "chloe@northwind.studio",
+      email: "chloe@northwind.test",
       title: "Creative Director",
       color: "#0EA5E9",
       createdAt: daysFromNow(-90),

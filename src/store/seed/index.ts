@@ -1,3 +1,4 @@
+import { DEMO_CREDENTIALS } from "@/constants";
 import type { Activity, AppNotification, AppState, Client, Holiday, HolidayCalendar, LeaveRequest, LeaveType, Project, Settings } from "@/types";
 import { seedActivities, seedNotifications } from "./activities";
 import { seedClients } from "./clients";
@@ -12,8 +13,16 @@ import { seedMembers, seedOrganization, seedUsers } from "./users";
 export { CURRENT_USER_ID } from "./users";
 export { DREAM_KASPER_ID, NORTHWIND_ID, membershipId } from "./organizations";
 
+/**
+ * Emails of the seeded demo people (plus the demo login). These may sign in to the
+ * mock data with any password — unless a real account with that email exists.
+ */
+export function demoEmails(): string[] {
+  return [DEMO_CREDENTIALS.email, ...[...seedUsers(), ...seedNorthwindUsers()].map((u) => u.email.toLowerCase())];
+}
+
 /** Bump when the persisted shape changes, and add a step to `src/store/migrations.ts`. */
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 export function defaultSettings(): Settings {
   return {

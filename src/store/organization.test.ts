@@ -12,8 +12,8 @@ import {
 import { createProject } from "@/store/actions/projects";
 import { createTask, moveTask } from "@/store/actions/tasks";
 import { requestLeave } from "@/store/actions/time-off";
-import { migrateState, type StateV2 } from "@/store/migrations";
-import { createSeedState, DREAM_KASPER_ID, membershipId, NORTHWIND_ID } from "@/store/seed";
+import { migrateState, migrateV3ToV4, type StateV2 } from "@/store/migrations";
+import { createSeedState, demoEmails, DREAM_KASPER_ID, membershipId, NORTHWIND_ID, STATE_VERSION } from "@/store/seed";
 import {
   getCurrentRole,
   getOrganizationProjects,
@@ -242,7 +242,7 @@ describe("localStorage migration", () => {
     const v2 = dreamKasperAsV2(seed);
     const migrated = migrateState(JSON.parse(JSON.stringify(v2)))!;
 
-    expect(migrated.version).toBe(3);
+    expect(migrated.version).toBe(STATE_VERSION);
     expect(migrated.organizations).toHaveLength(1);
     expect(migrated.organizations[0]).toMatchObject({ id: DREAM_KASPER_ID, name: "Dream Kasper LLP", slug: "dream-kasper-llp" });
     expect(migrated.activeOrganizationId).toBe(DREAM_KASPER_ID);
@@ -267,10 +267,30 @@ describe("localStorage migration", () => {
     const rest = omit(v2, "holidayCalendars", "holidays", "leaveTypes", "leaveRequests");
     const v1 = { ...rest, version: 1, organization: { id: v2.organization.id, name: v2.organization.name, website: "", plan: "Pro" } };
     const migrated = migrateState(v1)!;
-    expect(migrated.version).toBe(3);
+    expect(migrated.version).toBe(STATE_VERSION);
     expect(migrated.leaveTypes.length).toBeGreaterThan(0);
     expect(migrated.leaveTypes.every((t) => t.organizationId === DREAM_KASPER_ID)).toBe(true);
     expect(selectWorkspace(migrated).projects).toHaveLength(5);
+  });
+
+  it("moves demo people off real email addresses, leaving real people alone", () => {
+    const seed = getState();
+    const v3 = {
+      ...seed,
+      version: 3,
+      users: [
+        ...seed.users.map((u) => (u.id === "u_shubham" ? { ...u, email: "shubham@dreamkasper.com" } : u)),
+        { id: "u_sachin", name: "Sachin", email: "sachin@dreamkasper.com", title: "", color: "#000000", createdAt: "" },
+        { id: "u_real123", name: "Real Person", email: "real@dreamkasper.com", title: "", color: "#000000", createdAt: "" },
+      ],
+    };
+    const migrated = migrateV3ToV4(v3);
+    const email = (id: string) => migrated.users.find((u) => u.id === id)?.email;
+    expect(email("u_shubham")).toBe("shubham@dreamkasper.test");
+    expect(email("u_sachin")).toBe("sachin@dreamkasper.test");
+    expect(email("u_real123")).toBe("real@dreamkasper.com");
+    expect(demoEmails()).not.toContain("shubham@dreamkasper.com");
+    expect(demoEmails().every((e) => e === "demo@flowdesk.com" || e.endsWith(".test"))).toBe(true);
   });
 
   it("discards unknown versions", () => {

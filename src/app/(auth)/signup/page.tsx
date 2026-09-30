@@ -10,17 +10,16 @@ import { AuthCard, GoogleIcon, OrDivider } from "@/components/auth/auth-card";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
-import { firstName, wait } from "@/lib/utils";
-import { signInWithGoogle, signUp } from "@/store/actions/auth";
-import { getState } from "@/store/store";
+import { authClient } from "@/lib/auth-client";
+import { firstName } from "@/lib/utils";
+import { signInAccount, signInWithGoogle } from "@/store/actions/auth";
+import { demoEmails } from "@/store/seed";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Please enter your full name"),
   email: z
     .email("Enter a valid work email")
-    .refine((email) => !getState().users.some((u) => u.email.toLowerCase() === email.toLowerCase()), {
-      message: "An account with this email already exists — sign in instead",
-    }),
+    .refine((email) => !demoEmails().includes(email.trim().toLowerCase()), { message: "This address belongs to a demo account — use your own email" }),
   password: z
     .string()
     .min(8, "Use at least 8 characters")
@@ -34,12 +33,25 @@ export default function SignupPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", password: "" } });
 
+  /**
+   * Creates a real account (Better Auth). The app itself still runs on mock data:
+   * the new account starts with no workspaces and goes to onboarding.
+   */
   async function onSubmit(values: FormValues) {
-    await wait(700);
-    const user = signUp(values.name, values.email);
+    const { data, error } = await authClient.signUp.email({ name: values.name.trim(), email: values.email, password: values.password });
+    if (error) {
+      if (error.code === "USER_ALREADY_EXISTS" || error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+        setError("email", { message: "An account with this email already exists — sign in instead" });
+      } else {
+        toast.error(error.message ?? "Couldn't create your account. Try again.");
+      }
+      return;
+    }
+    const user = signInAccount({ email: data.user.email, name: data.user.name });
     toast.success(`Account created — welcome to FlowDesk, ${firstName(user.name)}!`);
     router.push("/dashboard");
   }

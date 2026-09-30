@@ -1,5 +1,7 @@
 import { slugify } from "@/lib/organizations";
 import { DREAM_KASPER_ID, membershipId, seedDreamKasperTimeOff, STATE_VERSION } from "@/store/seed";
+import { seedNorthwindUsers } from "@/store/seed/northwind";
+import { seedUsers } from "@/store/seed/users";
 import type {
   Activity,
   AppNotification,
@@ -23,6 +25,7 @@ import type {
  * v1 → single organization, no time off
  * v2 → single organization (`state.organization`), roles on `User`
  * v3 → many organizations with memberships; org-owned records carry `organizationId`
+ * v4 → demo people use reserved `.test` emails, so real addresses stay free for real accounts
  */
 
 type Unscoped<T> = Omit<T, "organizationId">;
@@ -92,7 +95,7 @@ export function migrateV2ToV3(saved: StateV2): AppState {
   }));
 
   return {
-    version: STATE_VERSION,
+    version: 3,
     session: saved.session,
     activeOrganizationId: orgId,
     organizations: [
@@ -147,15 +150,40 @@ function migrateV1ToV3(saved: StateV1): AppState {
   };
 }
 
+/** Demo people's ids before and after the rename, with the local part of their demo email. */
+const LEGACY_DEMO_IDS: Record<string, string> = {
+  u_sachin: "sachin@dreamkasper.test",
+  u_aditya: "aditya@dreamkasper.test",
+  u_mayuri: "mayuri@dreamkasper.test",
+  u_venky: "venky@dreamkasper.test",
+  u_priya: "priya@dreamkasper.test",
+  u_rahul: "rahul@dreamkasper.test",
+  u_neha: "neha@dreamkasper.test",
+  u_arjun: "arjun@dreamkasper.test",
+  u_olivia: "olivia@northwind.test",
+};
+
+/** v4 moved the seeded demo people off real-looking addresses (`@dreamkasper.com`) onto `.test`. */
+export function migrateV3ToV4(saved: AppState): AppState {
+  const demo = new Map<string, string>([...Object.entries(LEGACY_DEMO_IDS), ...[...seedUsers(), ...seedNorthwindUsers()].map((u) => [u.id, u.email] as [string, string])]);
+  return {
+    ...saved,
+    version: STATE_VERSION,
+    users: saved.users.map((u) => (demo.has(u.id) ? { ...u, email: demo.get(u.id)! } : u)),
+  };
+}
+
 /** Returns the saved state in the current shape, or `null` when it can't be upgraded. */
 export function migrateState(saved: { version?: unknown }): AppState | null {
   switch (saved.version) {
     case STATE_VERSION:
       return saved as AppState;
+    case 3:
+      return migrateV3ToV4(saved as AppState);
     case 2:
-      return migrateV2ToV3(saved as StateV2);
+      return migrateV3ToV4(migrateV2ToV3(saved as StateV2));
     case 1:
-      return migrateV1ToV3(saved as StateV1);
+      return migrateV3ToV4(migrateV1ToV3(saved as StateV1));
     default:
       return null;
   }

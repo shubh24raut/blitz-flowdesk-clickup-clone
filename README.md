@@ -17,9 +17,11 @@ Open http://localhost:3000 for the public landing page (hero, features, workspac
 | --- | --- |
 | `demo@flowdesk.com` | `password` |
 
-Any valid-looking email and password (6+ characters) also works. An existing user's email signs in as that user; an unknown email creates a new account with **no workspace**, which lands on the onboarding screen to create one. "Continue with Google" signs in as the demo user.
+**Real accounts:** sign up at `/signup` to create a real account (Better Auth, stored in Neon). Real accounts always need their real password, and "Forgot password" emails a reset link. The app itself still runs on mock data: a new real account has no workspaces, so it lands on the onboarding screen ("Create your first workspace").
 
-The demo user (Shubham) is **Owner** of *Dream Kasper LLP* and a **Member** of the small *Northwind Studio* workspace, so roles differ per workspace. `chloe@northwind.studio` signs in as Northwind's Owner, who can't see Dream Kasper at all.
+**Demo logins:** the seeded demo people (`demo@flowdesk.com`, `rohan@dreamkasper.test`, …) sign in with any password. Their emails use the reserved `.test` domain and can't be used to sign up. Unknown emails are rejected.
+
+The demo user (Shubham) is **Owner** of *Dream Kasper LLP* and a **Member** of the small *Northwind Studio* workspace, so roles differ per workspace. `chloe@northwind.test` signs in as Northwind's Owner, who can't see Dream Kasper at all.
 
 Other scripts:
 
@@ -118,7 +120,7 @@ app/api/**/route.ts → controllers/*.controller.ts → services/*.service.ts �
 - Roles live on the **membership** (`OrganizationMember.role`), never on `User`. `useCurrentUser()` returns a `Member` (user + membership) whose `role` is the role in the active workspace. Role rules (including "at least one Owner") are pure functions in `src/lib/organizations.ts`.
 - Components **never write state directly**. Every mutation goes through an action in `src/store/actions/*`, for example `createTask`, `updateTask`, `moveTask`, `addStage`, `deleteStage(id, moveTo)`, `addComment`, `addAttachments`, `createOrganization`, `switchOrganization`, `updateOrganizationMemberRole` and `leaveOrganization`. Actions stamp new records with the active `organizationId`, reject cross-workspace references (e.g. a project using another workspace's client), and record activity entries.
 - Time-off rules that don't depend on the UI (working days, leave-day counting) live in `src/lib/time-off.ts`, and form payloads in `src/validators/{leave,holiday}.validator.ts`, so the future `leave.service.ts` and controllers can reuse them as-is.
-- `src/store/store.ts` is a small `useSyncExternalStore` store. Writes to `localStorage` are debounced and flushed when the page is hidden. Saved state is versioned (`STATE_VERSION = 3`); older single-organization saves are migrated into *Dream Kasper LLP* instead of being discarded.
+- `src/store/store.ts` is a small `useSyncExternalStore` store. Writes to `localStorage` are debounced and flushed when the page is hidden. Saved state is versioned (`STATE_VERSION = 4`); older single-organization saves are migrated into *Dream Kasper LLP* instead of being discarded.
 
 To connect the real backend, re-implement the actions in `src/store/actions` as calls to `/api/*` (with optimistic updates, or a query cache) and replace `useWorkspace` reads with data fetching scoped to the active organization; then `src/store/seed` can go. Better Auth will provide the user identity only; workspace access and roles come from the `organization_members` table. The shapes in `src/types` are designed to map onto the Drizzle tables in `src/db/schema`. Stages are their own collection keyed by `projectId`, and tasks reference `stageId` plus an `order`, so there is no fixed status enum.
 
