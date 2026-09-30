@@ -1,4 +1,5 @@
-import type { AppState, Client, ID, Project, Stage, Task, User } from "@/types";
+import { countLeaveDays, daysOffFrom, eachDateKey, fromDateKey, rangesOverlap } from "@/lib/time-off";
+import type { AppState, Client, DateKey, Holiday, ID, LeaveRequest, LeaveType, Project, Stage, Task, User } from "@/types";
 
 interface Indexes {
   users: Map<ID, User>;
@@ -107,4 +108,82 @@ export function taskPhase(state: AppState, task: Task): Phase {
   if (/review|qa|test|approv/i.test(stage.name)) return "Review";
   if (stage.order === 0) return "To Do";
   return "In Progress";
+}
+
+/* ---------------------------------- Time off --------------------------------- */
+
+export function holidayCalendarIdFor(state: AppState, userId: ID): ID | null {
+  const user = indexes(state).users.get(userId);
+  return user?.holidayCalendarId ?? state.organization.defaultHolidayCalendarId;
+}
+
+/** Company-wide holidays plus the member's own holiday calendar, sorted by date. */
+export function holidaysFor(state: AppState, userId: ID): Holiday[] {
+  const calendarId = holidayCalendarIdFor(state, userId);
+  return state.holidays
+    .filter((h) => h.calendarId === null || h.calendarId === calendarId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function leaveDaysFor(state: AppState, userId: ID, range: { start: DateKey; end: DateKey; halfDay: boolean }): number {
+  return countLeaveDays({
+    ...range,
+    workingDays: state.organization.workingDays,
+    daysOff: daysOffFrom(holidaysFor(state, userId)),
+  });
+}
+
+/** What a date range skips: non-working weekdays, and holidays that fall on working days. */
+export function skippedDaysFor(state: AppState, userId: ID, range: { start: DateKey; end: DateKey }): { weekendDays: number; holidays: Holiday[] } {
+  const { workingDays } = state.organization;
+  const offByDate = new Map(holidaysFor(state, userId).filter((h) => h.kind !== "optional").map((h) => [h.date, h]));
+  let weekendDays = 0;
+  const holidays: Holiday[] = [];
+  for (const key of eachDateKey(range.start, range.end)) {
+    if (!workingDays.includes(fromDateKey(key).getDay())) weekendDays++;
+    else if (offByDate.has(key)) holidays.push(offByDate.get(key)!);
+  }
+  return { weekendDays, holidays };
+}
+
+export interface LeaveBalance {
+  type: LeaveType;
+  used: number;
+  pending: number;
+  /** `null` when the leave type has no allowance. */
+  remaining: number | null;
+}
+
+/** Fixed yearly allowance: requests count toward the year they start in. */
+export function leaveBalances(state: AppState, userId: ID, year: number): LeaveBalance[] {
+  const prefix = String(year);
+  const mine = state.leaveRequests.filter((r) => r.userId === userId && r.startDate.startsWith(prefix));
+  return state.leaveTypes.map((type) => {
+    const ofType = mine.filter((r) => r.typeId === type.id);
+    const sum = (status: LeaveRequest["status"]) => ofType.filter((r) => r.status === status).reduce((n, r) => n + r.days, 0);
+    const used = sum("Approved");
+    const pending = sum("Pending");
+    return { type, used, pending, remaining: type.allowance === null ? null : type.allowance - used - pending };
+  });
+}
+
+/** Approved leave covering a date. */
+export function approvedLeaveOn(state: AppState, date: DateKey): LeaveRequest[] {
+  return state.leaveRequests.filter((r) => r.status === "Approved" && r.startDate <= date && date <= r.endDate);
+}
+
+/** Pending or approved requests of a member that clash with a date range. */
+export function overlappingLeave(state: AppState, userId: ID, range: { startDate: DateKey; endDate: DateKey }, ignoreId?: ID): LeaveRequest[] {
+  return state.leaveRequests.filter(
+    (r) => r.userId === userId && r.id !== ignoreId && (r.status === "Pending" || r.status === "Approved") && rangesOverlap(r, range),
+  );
+}
+
+export function isTimeOffAdmin(user: User): boolean {
+  return user.role === "Owner" || user.role === "Admin";
+}
+
+/** Owners and admins review requests — never their own. */
+export function canReviewLeave(reviewer: User, request: LeaveRequest): boolean {
+  return isTimeOffAdmin(reviewer) && reviewer.id !== request.userId && request.status === "Pending";
 }

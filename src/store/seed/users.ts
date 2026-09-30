@@ -1,5 +1,6 @@
 import type { Organization, User } from "@/types";
 import { daysFromNow } from "./time";
+import { SEED_HOLIDAY_CALENDAR_ID, SEED_WORKING_DAYS } from "./time-off";
 
 export const CURRENT_USER_ID = "u_sachin";
 
@@ -9,6 +10,8 @@ export function seedOrganization(): Organization {
     name: "Dream Kasper LLP",
     website: "https://dreamkasper.com",
     plan: "Pro",
+    workingDays: SEED_WORKING_DAYS,
+    defaultHolidayCalendarId: SEED_HOLIDAY_CALENDAR_ID,
   };
 }
 

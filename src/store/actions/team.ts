@@ -45,6 +45,7 @@ export function removeMember(id: ID): boolean {
           assigneeIds: t.assigneeIds.filter((m) => m !== id),
           checklist: t.checklist.map((c) => (c.assigneeId === id ? { ...c, assigneeId: null } : c)),
         })),
+        leaveRequests: s.leaveRequests.filter((r) => r.userId !== id),
       },
       { action: "removed", target: user?.name ?? "a member" },
     ),

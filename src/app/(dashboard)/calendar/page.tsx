@@ -14,9 +14,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { CalendarX2, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { CalendarX2, ChevronLeft, ChevronRight, Palmtree, Plus } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CalendarTaskChip } from "@/components/calendar/calendar-task-chip";
+import { isDayOff, TimeOffMarkers, useCalendarTimeOff, type DayTimeOff } from "@/components/calendar/calendar-time-off";
 import { useUI } from "@/components/providers/ui-provider";
 import { AvatarStack } from "@/components/shared/avatar";
 import { PriorityBadge, StageBadge } from "@/components/shared/badges";
@@ -27,6 +29,7 @@ import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toDate } from "@/lib/dates";
+import { toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { getUsers, indexes } from "@/store/selectors";
 import { useAppState, useCurrentUser } from "@/store/hooks";
@@ -45,6 +48,7 @@ export default function CalendarPage() {
   const [projectId, setProjectId] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
   const idx = indexes(state);
+  const timeOffOn = useCalendarTimeOff();
 
   const tasksByDay = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -92,7 +96,7 @@ export default function CalendarPage() {
     <div className="mx-auto max-w-[1400px] space-y-5">
       <PageHeader
         title="Calendar"
-        description="View your tasks and deadlines."
+        description="Tasks, deadlines, holidays and who's off."
         actions={
           <Button onClick={() => createOn(selected)}>
             <Plus /> New Task
@@ -159,6 +163,7 @@ export default function CalendarPage() {
             <div className="grid grid-cols-7">
               {monthDays.map((day) => {
                 const tasks = tasksOn(day);
+                const timeOff = timeOffOn(day);
                 const inMonth = isSameMonth(day, cursor);
                 const isSelected = isSameDay(day, selected);
                 return (
@@ -175,6 +180,7 @@ export default function CalendarPage() {
                     className={cn(
                       "group relative min-h-16 border-b border-r border-border p-1 text-left transition sm:min-h-28 sm:p-1.5 [&:nth-child(7n)]:border-r-0",
                       !inMonth && "bg-muted/30",
+                      isDayOff(timeOff) && !isSelected && "bg-emerald-50/60 dark:bg-emerald-500/5",
                       isSelected ? "bg-primary-light/50" : "hover:bg-lavender",
                     )}
                   >
@@ -205,6 +211,7 @@ export default function CalendarPage() {
                         <span key={t.id} className="size-1.5 rounded-full" style={{ backgroundColor: idx.stages.get(t.stageId)?.color }} />
                       ))}
                     </div>
+                    <TimeOffMarkers timeOff={timeOff} className="mt-1 hidden sm:block" />
                     <div className="mt-1 hidden space-y-1 sm:block">
                       {tasks.slice(0, 3).map((t) => (
                         <CalendarTaskChip key={t.id} task={t} stage={idx.stages.get(t.stageId)} />
@@ -229,7 +236,7 @@ export default function CalendarPage() {
               })}
             </div>
           </Card>
-          <DayAgenda day={selected} tasks={tasksOn(selected)} onAdd={() => createOn(selected)} className="sm:hidden" />
+          <DayAgenda day={selected} tasks={tasksOn(selected)} timeOff={timeOffOn(selected)} onAdd={() => createOn(selected)} className="sm:hidden" />
         </div>
       )}
 
@@ -237,6 +244,7 @@ export default function CalendarPage() {
         <div className="grid gap-3 md:grid-cols-7">
           {weekDays.map((day) => {
             const tasks = tasksOn(day);
+            const timeOff = timeOffOn(day);
             return (
               <Card key={day.toISOString()} className={cn("flex min-h-40 flex-col p-3 md:min-h-[420px]", isToday(day) && "border-primary/40 ring-3 ring-primary/10")}>
                 <div className="mb-2 flex items-center justify-between">
@@ -248,6 +256,7 @@ export default function CalendarPage() {
                     <Plus className="size-4" />
                   </button>
                 </div>
+                <TimeOffMarkers timeOff={timeOff} className="mb-2" />
                 <div className="space-y-1.5">
                   {tasks.map((t) => (
                     <CalendarTaskChip key={t.id} task={t} stage={idx.stages.get(t.stageId)} className="whitespace-normal py-1.5 text-xs" />
@@ -260,12 +269,24 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {view === "day" && <DayAgenda day={cursor} tasks={tasksOn(cursor)} onAdd={() => createOn(cursor)} />}
+      {view === "day" && <DayAgenda day={cursor} tasks={tasksOn(cursor)} timeOff={timeOffOn(cursor)} onAdd={() => createOn(cursor)} />}
     </div>
   );
 }
 
-function DayAgenda({ day, tasks, onAdd, className }: { day: Date; tasks: Task[]; onAdd: () => void; className?: string }) {
+function DayAgenda({
+  day,
+  tasks,
+  timeOff,
+  onAdd,
+  className,
+}: {
+  day: Date;
+  tasks: Task[];
+  timeOff: DayTimeOff;
+  onAdd: () => void;
+  className?: string;
+}) {
   const state = useAppState();
   const { openTask } = useUI();
   const idx = indexes(state);
@@ -273,10 +294,18 @@ function DayAgenda({ day, tasks, onAdd, className }: { day: Date; tasks: Task[];
     <Card className={cn("p-4 sm:p-5", className)}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-semibold">{isToday(day) ? "Today" : format(day, "EEEE, MMM d")}</h3>
-        <Button variant="soft" size="sm" onClick={onAdd}>
-          <Plus /> Add
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/time-off?request=${toDateKey(day)}`}>
+              <Palmtree /> Time off
+            </Link>
+          </Button>
+          <Button variant="soft" size="sm" onClick={onAdd}>
+            <Plus /> Add
+          </Button>
+        </div>
       </div>
+      <TimeOffMarkers timeOff={timeOff} className="mb-3 rounded-xl bg-muted/50 p-2.5" />
       {tasks.length === 0 ? (
         <EmptyState compact icon={CalendarX2} title="Nothing due" description="Enjoy the free time — or plan something new." />
       ) : (

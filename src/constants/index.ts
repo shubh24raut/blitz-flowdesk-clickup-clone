@@ -1,4 +1,4 @@
-import type { ClientStatus, Priority, ProjectStatus, Role } from "@/types";
+import type { ClientStatus, HolidayKind, LeaveStatus, Priority, ProjectStatus, Role } from "@/types";
 
 export const PRIORITIES: Priority[] = ["Low", "Medium", "High", "Urgent"];
 
@@ -93,3 +93,33 @@ export const ROLES: Role[] = ["Owner", "Admin", "Member"];
 export const LANGUAGES = ["English", "Hindi", "Español", "Français", "Deutsch"];
 
 export const DEMO_CREDENTIALS = { email: "demo@flowdesk.com", password: "password" };
+
+export const LEAVE_STATUS_STYLES: Record<LeaveStatus, string> = {
+  Pending: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
+  Approved: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
+  Rejected: "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400",
+  Cancelled: "bg-slate-100 text-slate-500 dark:bg-slate-500/20 dark:text-slate-300",
+};
+
+export const HOLIDAY_KIND_LABELS: Record<HolidayKind, string> = {
+  public: "Public holiday",
+  optional: "Optional",
+  company: "Company holiday",
+};
+
+export const HOLIDAY_KIND_STYLES: Record<HolidayKind, string> = {
+  public: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
+  optional: "bg-slate-100 text-slate-500 dark:bg-slate-500/20 dark:text-slate-300",
+  company: "bg-primary-light text-primary",
+};
+
+/** Monday-first order for working-day pickers; values are `Date#getDay()` numbers. */
+export const WEEKDAYS: Array<{ value: number; short: string; long: string }> = [
+  { value: 1, short: "Mon", long: "Monday" },
+  { value: 2, short: "Tue", long: "Tuesday" },
+  { value: 3, short: "Wed", long: "Wednesday" },
+  { value: 4, short: "Thu", long: "Thursday" },
+  { value: 5, short: "Fri", long: "Friday" },
+  { value: 6, short: "Sat", long: "Saturday" },
+  { value: 0, short: "Sun", long: "Sunday" },
+];

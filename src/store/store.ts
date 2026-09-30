@@ -31,13 +31,37 @@ function sanitize(loaded: AppState): AppState {
   };
 }
 
+/** Upgrades older saved state instead of discarding it. Returns `null` when it can't. */
+function migrate(saved: AppState): AppState | null {
+  if (saved.version === STATE_VERSION) return saved;
+  if (saved.version === 1) {
+    // v2 added time off: keep everything, add the seed holidays / leave types / requests.
+    const seed = createSeedState();
+    const userIds = new Set(saved.users.map((u) => u.id));
+    return {
+      ...saved,
+      version: STATE_VERSION,
+      organization: {
+        ...saved.organization,
+        workingDays: seed.organization.workingDays,
+        defaultHolidayCalendarId: seed.organization.defaultHolidayCalendarId,
+      },
+      holidayCalendars: seed.holidayCalendars,
+      holidays: seed.holidays,
+      leaveTypes: seed.leaveTypes,
+      leaveRequests: seed.leaveRequests.filter((r) => userIds.has(r.userId)),
+    };
+  }
+  return null;
+}
+
 function load(): AppState {
   if (typeof window === "undefined") return createSeedState();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as AppState;
-      if (parsed.version === STATE_VERSION) return sanitize(parsed);
+      const migrated = migrate(JSON.parse(raw) as AppState);
+      if (migrated) return sanitize(migrated);
     }
   } catch {
     // Corrupt or inaccessible storage — fall back to fresh seed data.

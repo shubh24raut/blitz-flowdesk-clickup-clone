@@ -55,6 +55,7 @@ Not used: MongoDB, Prisma, Express, NestJS, Redux.
 - **Kanban:** drag between columns, reorder within a column, and use the keyboard (Space to pick up, arrows to move, Enter to open). Also: quick-add per column, add stage inline, search, filters, group by Stage or Priority, and a Board/List toggle.
 - **Task drawer:** a right-side drawer on desktop (expandable) and a full-screen sheet on mobile. You can edit the stage, priority, assignees, due date, tags, title and a markdown description. It also has a sortable checklist, comments with replies, @mentions, reactions, emoji and file attachments, a Files tab (images, videos, PDFs, code with previews), and an Activity history.
 - **Global:** a Tasks page across projects, a Calendar (month/week/day, click a task to open it, double-click a day to create one), Team (invite, change role, deactivate, remove), and Reports (Recharts).
+- **Time off:** leave types with fixed yearly allowances, requests (full or half day) that count only working days, and approval by Owners/Admins (never your own request). Also: balances, a "Who's out" view, national holidays imported per country/state (via `date-holidays`) plus company holidays, a configurable working week, and a holiday calendar per member. Holidays and approved leave appear on the Calendar and the Team page.
 - **Settings:** Profile (with photo upload), Organization, Appearance (Light/Dark/System), Notifications.
 - **Across the app:** Ctrl/⌘+K search palette, notifications, toasts, empty states, skeletons and confirmation dialogs. Layouts are responsive at 375 / 768 / 1024 / 1440+. Tablet uses an icon sidebar; mobile uses a bottom nav with a FAB.
 
@@ -71,7 +72,7 @@ src/
     shared/            Avatars, badges, pickers, rich text, activity feed, …
     layout/            Sidebar, topbar, mobile nav, search palette, notifications
     tasks/ projects/ clients/ team/ calendar/ dashboard/ reports/ settings/
-    comments/ attachments/ auth/
+    comments/ attachments/ auth/ time-off/
     providers/         App providers, UI provider (drawer / dialogs / search mounted once)
   controllers/         HTTP layer: parse + validate request, call a service, shape the response   (placeholders)
   services/            Business rules and orchestration; talks only to repositories                (placeholders)
@@ -81,7 +82,7 @@ src/
     index.ts           Drizzle client over Neon (server-only)
     schema/            One file per table, re-exported from schema/index.ts                        (placeholders)
     migrations/        Output of `npm run db:generate`
-  lib/                 utils, dates, and integration clients: auth, auth-client, cloudinary, firebase, resend,
+  lib/                 utils, dates, time-off (working-day rules), holidays (date-holidays lookup), and integration clients: auth, auth-client, cloudinary, firebase, resend,
                        permissions, errors (integration files are placeholders)
   constants/           Priorities, statuses, colors, roles, demo credentials
   hooks/               Shared client hooks (useProject, useLogout)
@@ -105,6 +106,7 @@ app/api/**/route.ts → controllers/*.controller.ts → services/*.service.ts �
 
 - Components **read** state with `useAppState()` / `useCurrentUser()` and derive views with the pure functions in `src/store/selectors.ts`.
 - Components **never write state directly**. Every mutation goes through an action in `src/store/actions/*`, for example `createTask`, `updateTask`, `moveTask`, `addStage`, `deleteStage(id, moveTo)`, `addComment`, `addAttachments` and `inviteMember`. Actions also record activity entries.
+- Time-off rules that don't depend on the UI (working days, leave-day counting) live in `src/lib/time-off.ts`, and form payloads in `src/validators/{leave,holiday}.validator.ts`, so the future `leave.service.ts` and controllers can reuse them as-is.
 - `src/store/store.ts` is a small `useSyncExternalStore` store. Writes to `localStorage` are debounced and flushed when the page is hidden.
 
 To connect the real backend, re-implement the actions in `src/store/actions` as calls to `/api/*` (with optimistic updates, or a query cache) and replace `useAppState` reads with data fetching; then `src/store/seed` can go. The shapes in `src/types` are designed to map onto the Drizzle tables in `src/db/schema`. Stages are their own collection keyed by `projectId`, and tasks reference `stageId` plus an `order`, so there is no fixed status enum.

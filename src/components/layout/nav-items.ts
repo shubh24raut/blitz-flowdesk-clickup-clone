@@ -3,6 +3,7 @@ import {
   ChartColumn,
   FolderKanban,
   House,
+  Palmtree,
   Settings,
   SquareCheckBig,
   Users,
@@ -23,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/tasks", label: "Tasks", icon: SquareCheckBig },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/team", label: "Team", icon: Users },
+  { href: "/time-off", label: "Time Off", icon: Palmtree },
   { href: "/reports", label: "Reports", icon: ChartColumn },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

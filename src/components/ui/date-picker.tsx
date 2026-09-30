@@ -30,6 +30,9 @@ const parse = (value: string) => {
 
 const WEEK = { weekStartsOn: 0 } as const;
 
+/** Per-day annotation: `off` = a day off (dot), `note` = informational (grey dot), `muted` = dimmed (e.g. weekends). */
+export type DayMark = { kind: "off" | "note" | "muted"; label: string };
+
 export function DatePicker({
   value,
   onChange,
@@ -39,6 +42,7 @@ export function DatePicker({
   clearable = true,
   presets = false,
   tone,
+  dayMark,
   className,
   "aria-label": ariaLabel,
 }: {
@@ -52,6 +56,8 @@ export function DatePicker({
   presets?: boolean;
   /** Colors the trigger text, e.g. red for an overdue task. */
   tone?: "danger";
+  /** Annotates days in the calendar (value is `yyyy-MM-dd`), e.g. holidays and weekends. */
+  dayMark?: (value: string) => DayMark | undefined;
   className?: string;
   "aria-label"?: string;
 }) {
@@ -101,7 +107,7 @@ export function DatePicker({
             (e.currentTarget as HTMLElement).querySelector<HTMLButtonElement>('[data-day][tabindex="0"]')?.focus();
           }}
         >
-          {open && <CalendarPanel selected={selected} onPick={pick} presets={presets} clearable={clearable} />}
+          {open && <CalendarPanel selected={selected} onPick={pick} presets={presets} clearable={clearable} dayMark={dayMark} />}
         </PopoverContent>
       </Popover>
       {clearable && selected && (
@@ -123,11 +129,13 @@ function CalendarPanel({
   onPick,
   presets,
   clearable,
+  dayMark,
 }: {
   selected: Date | null;
   onPick: (date: Date | null) => void;
   presets: boolean;
   clearable: boolean;
+  dayMark?: (value: string) => DayMark | undefined;
 }) {
   const [focused, setFocused] = useState<Date>(() => selected ?? new Date());
   const [month, setMonth] = useState<Date>(() => startOfMonth(selected ?? new Date()));
@@ -234,6 +242,7 @@ function CalendarPanel({
               const isSelected = selected ? isSameDay(day, selected) : false;
               const inMonth = isSameMonth(day, month);
               const isFocused = isSameDay(day, focused);
+              const mark = dayMark?.(toValue(day));
               return (
                 <span key={day.toISOString()} role="gridcell" aria-selected={isSelected} className="grid place-items-center">
                   <button
@@ -242,7 +251,8 @@ function CalendarPanel({
                     tabIndex={isFocused ? 0 : -1}
                     onClick={() => onPick(day)}
                     onFocus={() => !isFocused && setFocused(day)}
-                    aria-label={format(day, "EEEE, d MMMM yyyy")}
+                    aria-label={`${format(day, "EEEE, d MMMM yyyy")}${mark ? `, ${mark.label}` : ""}`}
+                    title={mark?.label}
                     aria-current={isToday(day) ? "date" : undefined}
                     className={cn(
                       "relative grid size-9 place-items-center rounded-lg text-sm tabular-nums outline-none transition",
@@ -251,12 +261,21 @@ function CalendarPanel({
                         ? "bg-primary font-semibold text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary-hover"
                         : isToday(day)
                           ? "bg-primary-light font-semibold text-primary hover:bg-primary/15"
-                          : inMonth
+                          : inMonth && mark?.kind !== "muted"
                             ? "text-foreground hover:bg-muted"
                             : "text-subtle hover:bg-muted",
                     )}
                   >
                     {format(day, "d")}
+                    {(mark?.kind === "off" || mark?.kind === "note") && (
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full",
+                          isSelected ? "bg-primary-foreground" : mark.kind === "off" ? "bg-emerald-500" : "bg-slate-400",
+                        )}
+                      />
+                    )}
                   </button>
                 </span>
               );
@@ -273,6 +292,11 @@ function CalendarPanel({
         >
           Today
         </button>
+        {dayMark && (
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-emerald-500" /> Holiday
+          </span>
+        )}
         {clearable && (
           <button
             type="button"

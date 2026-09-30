@@ -17,6 +17,8 @@ export interface User {
   /** Optional photo (data URL for locally uploaded avatars). */
   avatarUrl?: string;
   joinedAt: ISODate;
+  /** Holiday calendar this member follows. Falls back to the organization default. */
+  holidayCalendarId?: ID | null;
 }
 
 export interface Organization {
@@ -24,6 +26,9 @@ export interface Organization {
   name: string;
   website: string;
   plan: "Free" | "Pro" | "Business";
+  /** Days of the week people normally work, as `Date#getDay()` numbers (0 = Sunday). */
+  workingDays: number[];
+  defaultHolidayCalendarId: ID | null;
 }
 
 export type ClientStatus = "Active" | "Inactive" | "Lead";
@@ -170,6 +175,62 @@ export interface AppNotification {
   createdAt: ISODate;
 }
 
+/** Calendar date without a time or timezone: `yyyy-MM-dd`. */
+export type DateKey = string;
+
+/** A set of national or regional holidays that members can be assigned to. */
+export interface HolidayCalendar {
+  id: ID;
+  name: string;
+  /** ISO 3166 country code the calendar was imported from, e.g. "IN". */
+  countryCode: string | null;
+  /** State or region code within the country, e.g. "MH". */
+  regionCode: string | null;
+}
+
+/** `public` and `company` holidays are days off; `optional` ones are informational. */
+export type HolidayKind = "public" | "optional" | "company";
+
+export interface Holiday {
+  id: ID;
+  /** `null` for company-wide holidays that apply to every member. */
+  calendarId: ID | null;
+  name: string;
+  date: DateKey;
+  kind: HolidayKind;
+}
+
+export interface LeaveType {
+  id: ID;
+  name: string;
+  color: string;
+  /** Days per calendar year. `null` means no limit (e.g. unpaid leave). */
+  allowance: number | null;
+  paid: boolean;
+  /** When false, requests are approved as soon as they are submitted. */
+  requiresApproval: boolean;
+}
+
+export type LeaveStatus = "Pending" | "Approved" | "Rejected" | "Cancelled";
+
+export interface LeaveRequest {
+  id: ID;
+  userId: ID;
+  typeId: ID;
+  startDate: DateKey;
+  endDate: DateKey;
+  /** Only allowed for single-day requests. */
+  halfDay: boolean;
+  /** Working days taken, fixed when the request is submitted. */
+  days: number;
+  reason: string;
+  status: LeaveStatus;
+  reviewerId: ID | null;
+  reviewNote: string;
+  reviewedAt: ISODate | null;
+  createdAt: ISODate;
+}
+
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface NotificationPreferences {
@@ -204,5 +265,9 @@ export interface AppState {
   attachments: Attachment[];
   activities: Activity[];
   notifications: AppNotification[];
+  holidayCalendars: HolidayCalendar[];
+  holidays: Holiday[];
+  leaveTypes: LeaveType[];
+  leaveRequests: LeaveRequest[];
   settings: Settings;
 }

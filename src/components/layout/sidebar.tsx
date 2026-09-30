@@ -1,11 +1,10 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, Plus, Settings, Sparkles, Star, UserPlus } from "lucide-react";
+import { ChevronsUpDown, LogOut, Plus, Settings, Star, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LetterTile } from "@/components/shared/avatar";
 import { Logo, LogoMark } from "@/components/shared/logo";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,16 +108,7 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <div className="space-y-3 p-3 lg:p-4">
-        <div className="hidden rounded-2xl bg-gradient-to-br from-primary to-violet-500 p-4 text-white lg:block">
-          <Sparkles className="size-5" />
-          <p className="mt-2 text-sm font-semibold">Upgrade to Business</p>
-          <p className="mt-0.5 text-xs text-white/80">Unlock automations, guests and advanced reports.</p>
-          <Button size="sm" variant="secondary" className="mt-3 h-7 w-full border-0 text-xs text-primary">
-            View plans
-          </Button>
-        </div>
-
+      <div className="p-3 lg:p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

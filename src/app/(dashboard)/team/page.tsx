@@ -27,9 +27,10 @@ import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROLES } from "@/constants";
 import { formatLong } from "@/lib/dates";
+import { toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { removeMember, resendInvite, updateMember } from "@/store/actions/team";
-import { isTaskDone } from "@/store/selectors";
+import { approvedLeaveOn, isTaskDone } from "@/store/selectors";
 import { useAppState, useCurrentUser } from "@/store/hooks";
 import type { MemberStatus, Role, User } from "@/types";
 
@@ -38,6 +39,8 @@ const STATUS_STYLES: Record<MemberStatus, string> = {
   Invited: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
   Inactive: "bg-slate-100 text-slate-500 dark:bg-slate-500/20 dark:text-slate-300",
 };
+
+const ON_LEAVE_CLASS = "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400";
 
 const ROLE_STYLES: Record<Role, string> = {
   Owner: "bg-primary text-white",
@@ -57,6 +60,7 @@ function TeamContent() {
   const [role, setRole] = useState<"all" | Role>("all");
   const [removing, setRemoving] = useState<User | null>(null);
   const canManage = me.role === "Owner" || me.role === "Admin";
+  const outToday = new Set(approvedLeaveOn(state, toDateKey(new Date())).map((r) => r.userId));
 
   const stats = useMemo(() => {
     const map = new Map<string, { open: number; done: number; projects: number }>();
@@ -132,6 +136,7 @@ function TeamContent() {
     total: state.users.length,
     admins: state.users.filter((u) => u.role !== "Member").length,
     invited: state.users.filter((u) => u.status === "Invited").length,
+    out: outToday.size,
   };
 
   return (
@@ -148,11 +153,12 @@ function TeamContent() {
         }
       />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           ["Members", counts.total],
           ["Owners & admins", counts.admins],
           ["Pending invites", counts.invited],
+          ["Out today", counts.out],
         ].map(([label, value]) => (
           <Card key={label} className="p-4">
             <p className="text-xs text-muted-foreground">{label}</p>
@@ -196,6 +202,7 @@ function TeamContent() {
                           <div className="min-w-0">
                             <p className="truncate font-semibold">
                               {u.name} {u.id === me.id && <span className="text-xs font-normal text-muted-foreground">(you)</span>}
+                              {outToday.has(u.id) && <Badge className={cn("ml-1.5 h-5 px-2 text-[11px]", ON_LEAVE_CLASS)}>On leave</Badge>}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">{u.title}</p>
                           </div>
@@ -245,6 +252,7 @@ function TeamContent() {
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <Badge className={ROLE_STYLES[u.role]}>{u.role}</Badge>
                       <Badge className={STATUS_STYLES[u.status]}>{u.status}</Badge>
+                      {outToday.has(u.id) && <Badge className={ON_LEAVE_CLASS}>On leave</Badge>}
                       <span className="text-xs text-muted-foreground">
                         {s?.open ?? 0} open · {s?.projects ?? 0} projects
                       </span>

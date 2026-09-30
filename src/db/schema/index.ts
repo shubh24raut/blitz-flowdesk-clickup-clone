@@ -12,3 +12,7 @@ export * from "./comments";
 export * from "./attachments";
 export * from "./notifications";
 export * from "./activity-logs";
+export * from "./holiday-calendars";
+export * from "./holidays";
+export * from "./leave-types";
+export * from "./leave-requests";
