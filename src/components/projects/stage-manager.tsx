@@ -29,10 +29,10 @@ import {
 import { Field, Input, Label } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { COLOR_OPTIONS } from "@/lib/constants";
+import { COLOR_OPTIONS } from "@/constants";
 import { arrayMove, cn } from "@/lib/utils";
 import { restrictToVerticalAxisModifier } from "@/components/tasks/dnd-modifiers";
-import { addStage, reorderStages, updateStage } from "@/services/stages";
+import { addStage, reorderStages, updateStage } from "@/store/actions/stages";
 import { getProjectStages, getStageTasks } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 import type { Stage } from "@/types";

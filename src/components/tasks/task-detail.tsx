@@ -40,8 +40,8 @@ import { Tabs, TabCount, TabsContent, TabsList, TabsTrigger } from "@/components
 import { Tooltip } from "@/components/ui/tooltip";
 import { dueTone, formatLong, formatRelative, fromInputDate, toInputDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { addAttachments } from "@/services/attachments";
-import { deleteTask, duplicateTask, moveTask, setTaskCompleted, updateTask } from "@/services/tasks";
+import { addAttachments } from "@/store/actions/attachments";
+import { deleteTask, duplicateTask, moveTask, setTaskCompleted, updateTask } from "@/store/actions/tasks";
 import { getProjectStages, getStageTasks, indexes, isTaskDone, taskKey } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 import type { Attachment, Task } from "@/types";

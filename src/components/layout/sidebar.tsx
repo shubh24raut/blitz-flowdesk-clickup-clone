@@ -19,7 +19,7 @@ import { cn, initials } from "@/lib/utils";
 import { useAppState } from "@/store/hooks";
 import { useUI } from "@/components/providers/ui-provider";
 import { NAV_ITEMS, isActive } from "./nav-items";
-import { useLogout } from "./use-logout";
+import { useLogout } from "@/hooks/use-logout";
 
 /**
  * Desktop sidebar. Icon-only between md and lg (tablet), full width from lg.

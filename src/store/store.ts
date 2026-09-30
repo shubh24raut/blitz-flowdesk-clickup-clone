@@ -1,13 +1,13 @@
-import { createSeedState, STATE_VERSION } from "@/data";
+import { createSeedState, STATE_VERSION } from "@/store/seed";
 import type { AppState } from "@/types";
 
 /**
  * Minimal external store backing the mock data layer.
  *
  * UI components read state through the hooks in `./hooks` and never write to
- * it directly — every mutation goes through a service function in
- * `src/services`, so swapping this module for real API calls later only
- * touches the service layer.
+ * it directly — every mutation goes through an action function in
+ * `src/store/actions`, so swapping this module for real API calls later only
+ * touches the action layer.
  */
 
 const STORAGE_KEY = "flowdesk:state";

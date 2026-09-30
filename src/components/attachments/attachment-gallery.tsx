@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
-import { removeAttachment } from "@/services/attachments";
+import { removeAttachment } from "@/store/actions/attachments";
 import type { Attachment, AttachmentKind } from "@/types";
 import { AttachmentPreviewDialog } from "./attachment-preview-dialog";
 import { AttachmentTile } from "./attachment-tile";

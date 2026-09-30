@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { PRIORITIES, PRIORITY_STYLES } from "@/lib/constants";
+import { PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { cn } from "@/lib/utils";
 import type { ID, Priority, Stage, User } from "@/types";
 import { AvatarStack, UserAvatar } from "./avatar";

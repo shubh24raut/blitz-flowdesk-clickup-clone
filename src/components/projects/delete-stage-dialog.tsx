@@ -6,7 +6,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { pluralize } from "@/lib/utils";
-import { deleteStage } from "@/services/stages";
+import { deleteStage } from "@/store/actions/stages";
 import { getProjectStages, getStageTasks } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 import type { Stage } from "@/types";

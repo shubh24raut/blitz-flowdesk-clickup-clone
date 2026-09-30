@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PRIORITIES, PRIORITY_STYLES } from "@/lib/constants";
+import { PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { cn } from "@/lib/utils";
 import { isTaskDone } from "@/store/selectors";
 import type { AppState, ID, Priority, Task, User } from "@/types";

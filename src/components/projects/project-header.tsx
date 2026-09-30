@@ -8,7 +8,7 @@ import { ProjectStatusBadge } from "@/components/shared/badges";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn, withAlpha } from "@/lib/utils";
-import { toggleProjectStar } from "@/services/projects";
+import { toggleProjectStar } from "@/store/actions/projects";
 import { getUsers, indexes } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 import type { Project } from "@/types";

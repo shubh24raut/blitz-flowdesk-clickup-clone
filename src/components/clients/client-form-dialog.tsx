@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Field, Input, Label, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { CLIENT_STATUSES } from "@/lib/constants";
+import { CLIENT_STATUSES } from "@/constants";
 import { wait } from "@/lib/utils";
-import { createClient, updateClient } from "@/services/clients";
+import { createClient, updateClient } from "@/store/actions/clients";
 import type { Client } from "@/types";
 
 const schema = z.object({

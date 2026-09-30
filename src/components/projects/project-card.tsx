@@ -14,7 +14,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { dueTone, formatLong } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { toggleProjectStar } from "@/services/projects";
+import { toggleProjectStar } from "@/store/actions/projects";
 import type { Client, Project, User } from "@/types";
 
 export function ProjectCard({

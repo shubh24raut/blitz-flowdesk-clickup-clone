@@ -9,7 +9,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui
 import { Field, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { wait } from "@/lib/utils";
-import { inviteMember } from "@/services/team";
+import { inviteMember } from "@/store/actions/team";
 import { getState } from "@/store/store";
 
 const schema = z.object({

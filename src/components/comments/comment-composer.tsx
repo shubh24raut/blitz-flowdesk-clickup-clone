@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn, formatBytes } from "@/lib/utils";
-import { addComment } from "@/services/comments";
+import { addComment } from "@/store/actions/comments";
 import { useAppState, useCurrentUser } from "@/store/hooks";
 import type { ID } from "@/types";
 

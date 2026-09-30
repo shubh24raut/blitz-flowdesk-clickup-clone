@@ -16,11 +16,11 @@ import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui
 import { Field, Input, Label } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
-import { PRIORITIES, PRIORITY_STYLES } from "@/lib/constants";
+import { PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { fromInputDate, toInputDate } from "@/lib/dates";
 import { cn, formatBytes, wait } from "@/lib/utils";
-import { addAttachments } from "@/services/attachments";
-import { createTask } from "@/services/tasks";
+import { addAttachments } from "@/store/actions/attachments";
+import { createTask } from "@/store/actions/tasks";
 import { getProjectStages } from "@/store/selectors";
 import { useAppState, useCurrentUser } from "@/store/hooks";
 import type { ID } from "@/types";

@@ -10,7 +10,7 @@ import { UserAvatar } from "@/components/shared/avatar";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { wait } from "@/lib/utils";
-import { updateProfile } from "@/services/team";
+import { updateProfile } from "@/store/actions/team";
 import { useCurrentUser } from "@/store/hooks";
 import { getState } from "@/store/store";
 

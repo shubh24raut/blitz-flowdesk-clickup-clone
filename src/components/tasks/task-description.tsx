@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { MarkdownEditor } from "@/components/shared/markdown-editor";
 import { RichText } from "@/components/shared/rich-text";
 import { Button } from "@/components/ui/button";
-import { updateTask } from "@/services/tasks";
+import { updateTask } from "@/store/actions/tasks";
 import type { Task } from "@/types";
 
 export function TaskDescription({ task, mentionNames }: { task: Task; mentionNames: string[] }) {

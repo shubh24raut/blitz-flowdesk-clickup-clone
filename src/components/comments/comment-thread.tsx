@@ -20,7 +20,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatRelative } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { deleteComment, toggleReaction, updateComment } from "@/services/comments";
+import { deleteComment, toggleReaction, updateComment } from "@/store/actions/comments";
 import { indexes } from "@/store/selectors";
 import { useAppState, useCurrentUser } from "@/store/hooks";
 import type { Attachment, Comment, ID } from "@/types";

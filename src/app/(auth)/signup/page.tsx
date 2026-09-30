@@ -11,7 +11,7 @@ import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { firstName, wait } from "@/lib/utils";
-import { signInWithGoogle, signUp } from "@/services/auth";
+import { signInWithGoogle, signUp } from "@/store/actions/auth";
 import { getState } from "@/store/store";
 
 const schema = z.object({

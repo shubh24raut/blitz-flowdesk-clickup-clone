@@ -7,3 +7,11 @@ next-env.d.ts
 .env*
 npm-debug.log*
 .DS_Store
+!.env.example
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

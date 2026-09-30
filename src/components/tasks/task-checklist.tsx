@@ -17,7 +17,7 @@ import {
   reorderChecklist,
   toggleChecklistItem,
   updateChecklistItem,
-} from "@/services/tasks";
+} from "@/store/actions/tasks";
 import { indexes } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 import type { ChecklistItem, Task, User } from "@/types";

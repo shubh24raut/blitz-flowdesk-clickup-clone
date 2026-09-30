@@ -12,9 +12,9 @@ import { AuthCard, GoogleIcon, OrDivider } from "@/components/auth/auth-card";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
-import { DEMO_CREDENTIALS } from "@/lib/constants";
+import { DEMO_CREDENTIALS } from "@/constants";
 import { firstName, wait } from "@/lib/utils";
-import { signIn, signInWithGoogle } from "@/services/auth";
+import { signIn, signInWithGoogle } from "@/store/actions/auth";
 
 const schema = z.object({
   email: z.email("Enter a valid email address"),

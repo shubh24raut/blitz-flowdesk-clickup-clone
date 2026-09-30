@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { COLOR_OPTIONS } from "@/lib/constants";
+import { COLOR_OPTIONS } from "@/constants";
 import { cn } from "@/lib/utils";
 
 export function ColorPicker({

@@ -1,6 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { CLIENT_STATUS_STYLES, PRIORITY_STYLES, PROJECT_STATUS_STYLES, tagTone } from "@/lib/constants";
+import { CLIENT_STATUS_STYLES, PRIORITY_STYLES, PROJECT_STATUS_STYLES, tagTone } from "@/constants";
 import { dueTone, formatShort } from "@/lib/dates";
 import { cn, withAlpha } from "@/lib/utils";
 import type { ClientStatus, Priority, ProjectStatus } from "@/types";

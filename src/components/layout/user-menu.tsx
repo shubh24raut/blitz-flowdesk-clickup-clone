@@ -19,10 +19,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { resetDemoData, updateSettings } from "@/services/settings";
+import { resetDemoData, updateSettings } from "@/store/actions/settings";
 import { useAppState, useCurrentUser } from "@/store/hooks";
 import type { ThemePreference } from "@/types";
-import { useLogout } from "./use-logout";
+import { useLogout } from "@/hooks/use-logout";
 
 export function UserMenu() {
   const user = useCurrentUser();

@@ -13,10 +13,10 @@ import { Field, Input, Label, Textarea } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { LetterTile } from "@/components/shared/avatar";
-import { PROJECT_STATUSES } from "@/lib/constants";
+import { PROJECT_STATUSES } from "@/constants";
 import { fromInputDate, toInputDate } from "@/lib/dates";
 import { cn, wait } from "@/lib/utils";
-import { createProject, STAGE_TEMPLATES, updateProject, type StageTemplateId } from "@/services/projects";
+import { createProject, STAGE_TEMPLATES, updateProject, type StageTemplateId } from "@/store/actions/projects";
 import { useAppState, useCurrentUser } from "@/store/hooks";
 import type { ID, Project } from "@/types";
 

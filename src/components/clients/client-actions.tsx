@@ -15,8 +15,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CLIENT_STATUSES } from "@/lib/constants";
-import { setClientStatus } from "@/services/clients";
+import { CLIENT_STATUSES } from "@/constants";
+import { setClientStatus } from "@/store/actions/clients";
 import type { Client, ClientStatus } from "@/types";
 
 export function ClientActions({ client, onEdit, onDelete }: { client: Client; onEdit: () => void; onDelete: () => void }) {

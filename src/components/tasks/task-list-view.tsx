@@ -9,7 +9,7 @@ import { DueDate, PriorityBadge, StageBadge, TagBadge } from "@/components/share
 import { EmptyState } from "@/components/shared/empty-state";
 import { RoundCheck } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { setTaskCompleted } from "@/services/tasks";
+import { setTaskCompleted } from "@/store/actions/tasks";
 import { getUsers, indexes, taskKey } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 import type { Task } from "@/types";

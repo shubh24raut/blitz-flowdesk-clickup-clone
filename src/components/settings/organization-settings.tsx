@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { initials, wait } from "@/lib/utils";
-import { updateOrganization } from "@/services/settings";
+import { updateOrganization } from "@/store/actions/settings";
 import { useAppState } from "@/store/hooks";
 
 const schema = z.object({

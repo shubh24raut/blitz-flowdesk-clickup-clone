@@ -8,7 +8,7 @@ import { useUI } from "@/components/providers/ui-provider";
 import { Dialog, DialogBody, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
-import { useLogout } from "./use-logout";
+import { useLogout } from "@/hooks/use-logout";
 
 const PRIMARY = ["/dashboard", "/projects", "/tasks", "/calendar"];
 const LABELS: Record<string, string> = { "/dashboard": "Home" };

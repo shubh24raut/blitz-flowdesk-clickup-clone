@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { CURRENT_USER_ID } from "@/data";
+import { CURRENT_USER_ID } from "@/store/seed";
 import type { AppState, User } from "@/types";
 import { getServerState, getState, subscribe } from "./store";
 

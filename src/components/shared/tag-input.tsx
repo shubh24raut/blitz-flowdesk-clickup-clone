@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { useState } from "react";
-import { tagTone } from "@/lib/constants";
+import { tagTone } from "@/constants";
 import { cn } from "@/lib/utils";
 
 export function TagInput({

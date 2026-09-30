@@ -28,10 +28,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { COLOR_OPTIONS } from "@/lib/constants";
+import { COLOR_OPTIONS } from "@/constants";
 import { cn, withAlpha } from "@/lib/utils";
-import { updateStage } from "@/services/stages";
-import { createTask } from "@/services/tasks";
+import { updateStage } from "@/store/actions/stages";
+import { createTask } from "@/store/actions/tasks";
 import type { Priority, Stage, Task, User } from "@/types";
 import { TaskCard } from "./task-card";
 

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatRelative } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { clearNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/settings";
+import { clearNotifications, markAllNotificationsRead, markNotificationRead } from "@/store/actions/settings";
 import { indexes } from "@/store/selectors";
 import { useAppState } from "@/store/hooks";
 
