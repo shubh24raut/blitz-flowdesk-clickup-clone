@@ -5,11 +5,12 @@ import { ArrowLeft, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
-import { wait } from "@/lib/utils";
+import { authClient } from "@/lib/auth-client";
 
 const schema = z.object({ email: z.email("Enter a valid email address") });
 type FormValues = z.infer<typeof schema>;
@@ -23,7 +24,12 @@ export default function ForgotPasswordPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: "" } });
 
   async function onSubmit(values: FormValues) {
-    await wait(800);
+    // Always shows the same confirmation, so the form can't be used to discover accounts.
+    const { error } = await authClient.requestPasswordReset({ email: values.email, redirectTo: "/reset-password" });
+    if (error && error.status === 429) {
+      toast.error("Too many requests — please wait a minute and try again.");
+      return;
+    }
     setSentTo(values.email);
   }
 
@@ -40,8 +46,7 @@ export default function ForgotPasswordPage() {
           <MailCheck className="size-8 text-emerald-600" />
           <p className="text-sm text-muted-foreground">
             If an account exists for <span className="font-medium text-foreground">{sentTo}</span>, you&apos;ll receive
-            an email with instructions shortly. <br />
-            <span className="text-xs">(Demo mode — no email is actually sent.)</span>
+            an email with a reset link shortly. The link expires in 1 hour.
           </p>
         </div>
       </AuthCard>
