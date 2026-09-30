@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getNationalHolidays, listCountries, listRegions, type HolidayCandidate, type RegionOption } from "@/lib/holidays";
 import { fromDateKey } from "@/lib/time-off";
 import { importHolidays } from "@/store/actions/time-off";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 const WHOLE_COUNTRY = "";
 
@@ -28,7 +28,7 @@ export function ImportHolidaysDialog({ open, onOpenChange }: { open: boolean; on
 type Preview = { key: string; items: HolidayCandidate[] } | { key: string; error: string };
 
 function ImportForm({ onDone }: { onDone: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const fallback = state.holidayCalendars.find((c) => c.id === state.organization.defaultHolidayCalendarId);
   const thisYear = new Date().getFullYear();
   const [countries, setCountries] = useState<RegionOption[] | null>(null);

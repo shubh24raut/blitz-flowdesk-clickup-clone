@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent } from "@/components/ui/dialog";
 import { formatRelative } from "@/lib/dates";
 import { formatBytes } from "@/lib/utils";
 import { indexes } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Attachment } from "@/types";
 import { AttachmentIcon } from "./attachment-tile";
 
@@ -31,7 +31,7 @@ export function AttachmentPreviewDialog({
   attachment: Attachment | null;
   onOpenChange: (open: boolean) => void;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const uploader = attachment ? indexes(state).users.get(attachment.uploadedById) : undefined;
 
   return (

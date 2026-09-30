@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { addAttachments } from "@/store/actions/attachments";
 import { deleteTask, duplicateTask, moveTask, setTaskCompleted, updateTask } from "@/store/actions/tasks";
 import { getProjectStages, getStageTasks, indexes, isTaskDone, taskKey } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Attachment, Task } from "@/types";
 import { TaskChecklist } from "./task-checklist";
 import { TaskDescription } from "./task-description";
@@ -61,7 +61,7 @@ export function TaskDetail({
   onToggleExpand: () => void;
   onClose: () => void;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const { openTask } = useUI();
   const [tab, setTab] = useState<Tab>("details");
   const [confirmDelete, setConfirmDelete] = useState(false);

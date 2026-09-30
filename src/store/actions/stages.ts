@@ -1,11 +1,13 @@
 import { uid } from "@/lib/utils";
 import { getProjectStages } from "@/store/selectors";
-import { getState, setState } from "@/store/store";
+import { setState } from "@/store/store";
 import type { ID, Stage } from "@/types";
-import { now, withActivity } from "./internal";
+import { now, withActivity, workspace } from "./internal";
 
 export function addStage(projectId: ID, input: { name: string; color: string; isCompleted?: boolean }): Stage {
-  const existing = getProjectStages(getState(), projectId);
+  const ws = workspace();
+  if (!ws.projects.some((p) => p.id === projectId)) throw new Error("That project isn't in the active workspace.");
+  const existing = getProjectStages(ws, projectId);
   const stage: Stage = {
     id: uid("s"),
     projectId,
@@ -59,7 +61,8 @@ export function deleteStage(id: ID, moveToStageId: ID | null) {
   setState((s) => {
     const stage = s.stages.find((x) => x.id === id);
     if (!stage) return s;
-    const target = moveToStageId ? s.stages.find((x) => x.id === moveToStageId) : undefined;
+    // Tasks can only move to another stage of the same project.
+    const target = moveToStageId ? s.stages.find((x) => x.id === moveToStageId && x.projectId === stage.projectId) : undefined;
     const moving = s.tasks.filter((t) => t.stageId === id).sort((a, b) => a.order - b.order);
     if (moving.length > 0 && !target) return s;
     const base = s.tasks.filter((t) => t.stageId === target?.id).length;

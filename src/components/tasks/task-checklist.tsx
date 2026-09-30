@@ -19,12 +19,12 @@ import {
   updateChecklistItem,
 } from "@/store/actions/tasks";
 import { indexes } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { ChecklistItem, Task, User } from "@/types";
 import { restrictToVerticalAxisModifier } from "./dnd-modifiers";
 
 export function TaskChecklist({ task }: { task: Task }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const done = task.checklist.filter((c) => c.done).length;

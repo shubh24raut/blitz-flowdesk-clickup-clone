@@ -17,7 +17,7 @@ import { PROJECT_STATUSES } from "@/constants";
 import { fromInputDate, toInputDate } from "@/lib/dates";
 import { cn, wait } from "@/lib/utils";
 import { createProject, STAGE_TEMPLATES, updateProject, type StageTemplateId } from "@/store/actions/projects";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { ID, Project } from "@/types";
 
 const schema = z
@@ -61,7 +61,7 @@ export function ProjectFormDialog({
 }
 
 function ProjectForm({ project, defaultClientId, onDone }: { project?: Project; defaultClientId?: ID; onDone: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const router = useRouter();
   const today = new Date();

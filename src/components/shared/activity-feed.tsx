@@ -3,7 +3,7 @@
 import { History } from "lucide-react";
 import { useUI } from "@/components/providers/ui-provider";
 import { indexes } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { Activity } from "@/types";
 import { ActivityItem } from "./activity-item";
 import { EmptyState } from "./empty-state";
@@ -18,7 +18,7 @@ export function ActivityFeed({
   emptyText?: string;
   linkTasks?: boolean;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const { openTask } = useUI();
   const users = indexes(state).users;

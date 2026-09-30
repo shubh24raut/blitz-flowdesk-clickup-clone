@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn, formatBytes } from "@/lib/utils";
 import { addComment } from "@/store/actions/comments";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { ID } from "@/types";
 
 export const EMOJIS = ["👍", "❤️", "🎉", "😄", "🚀", "👀", "🔥", "✅", "🙏", "💯", "🤔", "😅", "👏", "✨", "🐛", "📌"];
@@ -43,7 +43,7 @@ export function CommentComposer({
   className?: string;
 }) {
   const me = useCurrentUser();
-  const state = useAppState();
+  const state = useWorkspace();
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [posting, setPosting] = useState(false);

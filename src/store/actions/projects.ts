@@ -1,7 +1,7 @@
 import { uid } from "@/lib/utils";
 import { getState, setState } from "@/store/store";
 import type { ID, Project, Stage } from "@/types";
-import { actorId, now, replaceById, withActivity } from "./internal";
+import { actorId, activeOrgId, now, replaceById, withActivity, workspace } from "./internal";
 
 type TemplateStage = { name: string; color: string; isCompleted?: boolean };
 
@@ -58,15 +58,27 @@ function deriveKey(name: string, taken: string[]): string {
   return key;
 }
 
+/** A project may only reference a client of its own organization. */
+function assertClientInWorkspace(clientId: ID | null | undefined) {
+  if (clientId && !workspace().clients.some((c) => c.id === clientId)) {
+    throw new Error("A project can only belong to a client in the same workspace.");
+  }
+}
+
 export function createProject(input: ProjectInput, template: StageTemplateId = "agency"): Project {
   const state = getState();
+  const ws = workspace();
   const me = actorId(state);
+  assertClientInWorkspace(input.clientId);
+  const memberIds = new Set(ws.users.map((u) => u.id));
+  const members = input.memberIds.filter((id) => memberIds.has(id));
   const project: Project = {
     ...input,
     id: uid("p"),
-    memberIds: input.memberIds.includes(me) ? input.memberIds : [me, ...input.memberIds],
+    organizationId: activeOrgId(state),
+    memberIds: members.includes(me) ? members : [me, ...members],
     starred: false,
-    key: deriveKey(input.name, state.projects.map((p) => p.key)),
+    key: deriveKey(input.name, ws.projects.map((p) => p.key)),
     createdAt: now(),
   };
   const stages: Stage[] = STAGE_TEMPLATES[template].stages.map((s, order) => ({
@@ -86,7 +98,8 @@ export function createProject(input: ProjectInput, template: StageTemplateId = "
   return project;
 }
 
-export function updateProject(id: ID, patch: Partial<Omit<Project, "id" | "key">>) {
+export function updateProject(id: ID, patch: Partial<Omit<Project, "id" | "key" | "organizationId">>) {
+  assertClientInWorkspace(patch.clientId);
   setState((s) => {
     const project = s.projects.find((p) => p.id === id);
     if (!project) return s;

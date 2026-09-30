@@ -3,11 +3,11 @@
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAppState, useHydrated } from "@/store/hooks";
+import { useWorkspace, useHydrated } from "@/store/hooks";
 
 /** Keeps the `dark` class on <html> in sync with the saved appearance setting. */
 function ThemeSync() {
-  const theme = useAppState().settings.theme;
+  const theme = useWorkspace().settings.theme;
   const hydrated = useHydrated();
   useEffect(() => {
     // The pre-paint script already set the class; wait for the real client state.

@@ -6,11 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatBytes } from "@/lib/utils";
 import { addAttachments } from "@/store/actions/attachments";
 import { indexes } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 export default function ProjectFilesPage() {
   const project = useProject();
-  const state = useAppState();
+  const state = useWorkspace();
   const idx = indexes(state);
   const files = state.attachments.filter((a) => a.projectId === project.id);
   const taskTitles = new Map(state.tasks.map((t) => [t.id, t.title]));

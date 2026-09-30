@@ -20,13 +20,13 @@ import {
 import { PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { cn } from "@/lib/utils";
 import { getProjectStages, getProjectTasks, getUsers } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 type GroupBy = "stage" | "priority";
 
 export default function ProjectTasksPage() {
   const project = useProject();
-  const state = useAppState();
+  const state = useWorkspace();
   const { openCreateTask } = useUI();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<TaskFilterState>(EMPTY_FILTERS);

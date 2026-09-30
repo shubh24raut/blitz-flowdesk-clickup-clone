@@ -1,12 +1,24 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { CURRENT_USER_ID } from "@/store/seed";
-import type { AppState, User } from "@/types";
+import { getUserWorkspaces, selectWorkspace } from "@/store/organization";
+import type { AppState, Member, WorkspaceState } from "@/types";
 import { getServerState, getState, subscribe } from "./store";
 
-export function useAppState(): AppState {
+/**
+ * The raw, unscoped state — every organization. Only workspace-level UI
+ * (switcher, onboarding, workspace management) should need this.
+ */
+export function useRootState(): AppState {
   return useSyncExternalStore(subscribe, getState, getServerState);
+}
+
+const getWorkspace = () => selectWorkspace(getState());
+const getServerWorkspace = () => selectWorkspace(getServerState());
+
+/** State scoped to the active organization. Screens read data through this. */
+export function useWorkspace(): WorkspaceState {
+  return useSyncExternalStore(subscribe, getWorkspace, getServerWorkspace);
 }
 
 const noopSubscribe = () => () => {};
@@ -20,8 +32,13 @@ export function useHydrated(): boolean {
   );
 }
 
-export function useCurrentUser(): User {
-  const state = useAppState();
-  const id = state.session?.userId ?? CURRENT_USER_ID;
-  return state.users.find((u) => u.id === id) ?? state.users[0];
+/** The signed-in user as a member of the active organization; `role` is their role there. */
+export function useCurrentUser(): Member {
+  return useWorkspace().currentUser;
+}
+
+/** Organizations the signed-in user belongs to, with their role in each. */
+export function useUserWorkspaces() {
+  const state = useRootState();
+  return getUserWorkspaces(state);
 }

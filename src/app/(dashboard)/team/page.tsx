@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, MailPlus, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
+import { Ellipsis, Info, LogOut, MailPlus, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
 import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
+import { LeaveWorkspaceDialog } from "@/components/workspace/leave-workspace-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,14 +26,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip } from "@/components/ui/tooltip";
 import { ROLES } from "@/constants";
 import { formatLong } from "@/lib/dates";
+import { canChangeRole, canManageMember, isAdminRole, LAST_OWNER_MESSAGE } from "@/lib/organizations";
 import { toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
-import { removeMember, resendInvite, updateMember } from "@/store/actions/team";
-import { approvedLeaveOn, isTaskDone } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
-import type { MemberStatus, Role, User } from "@/types";
+import { removeOrganizationMember, setOrganizationMemberStatus, updateOrganizationMemberRole } from "@/store/actions/team";
+import { approvedLeaveOn, isTaskDone, toMembership } from "@/store/selectors";
+import { useCurrentUser, useWorkspace } from "@/store/hooks";
+import type { Member, MemberStatus, Role } from "@/types";
 
 const STATUS_STYLES: Record<MemberStatus, string> = {
   Active: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
@@ -49,7 +52,7 @@ const ROLE_STYLES: Record<Role, string> = {
 };
 
 function TeamContent() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const params = useSearchParams();
   const router = useRouter();
@@ -58,9 +61,12 @@ function TeamContent() {
   const inviteOpen = inviteState || params.get("invite") === "1";
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<"all" | Role>("all");
-  const [removing, setRemoving] = useState<User | null>(null);
-  const canManage = me.role === "Owner" || me.role === "Admin";
+  const [removing, setRemoving] = useState<Member | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  // Roles are per workspace: `me.role` is my role in the active organization.
+  const canManage = isAdminRole(me.role);
   const outToday = new Set(approvedLeaveOn(state, toDateKey(new Date())).map((r) => r.userId));
+  const memberships = useMemo(() => state.users.map(toMembership), [state.users]);
 
   const stats = useMemo(() => {
     const map = new Map<string, { open: number; done: number; projects: number }>();
@@ -80,55 +86,116 @@ function TeamContent() {
     return (role === "all" || u.role === role) && (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.title.toLowerCase().includes(q));
   });
 
-  function changeRole(user: User, next: Role) {
+  const roleCheck = (user: Member, next: Role) => canChangeRole(state.membership, toMembership(user), next, memberships);
+  const manageCheck = (user: Member) => canManageMember(state.membership, toMembership(user), memberships);
+  /** Roles I could move this person to, other than the one they have. */
+  const roleOptions = (user: Member) => ROLES.filter((r) => r !== user.role && roleCheck(user, r).ok);
+  const isLastOwner = (user: Member) => {
+    const check = roleCheck(user, "Admin");
+    return !check.ok && check.reason === LAST_OWNER_MESSAGE;
+  };
+
+  function changeRole(user: Member, next: Role) {
     if (next === user.role) return;
-    updateMember(user.id, { role: next });
-    toast.success(`${user.name} is now ${next === "Admin" ? "an" : "a"} ${next}`);
+    const result = updateOrganizationMemberRole(user.membershipId, next);
+    if (!result.ok) toast.error(result.error);
+    else toast.success(`${user.name} is now ${next === "Admin" || next === "Owner" ? "an" : "a"} ${next}`);
   }
 
-  function actions(user: User) {
-    const locked = user.role === "Owner" || user.id === me.id || !canManage;
+  function setStatus(user: Member, status: MemberStatus, message: string) {
+    const result = setOrganizationMemberStatus(user.membershipId, status);
+    if (!result.ok) toast.error(result.error);
+    else toast.success(message);
+  }
+
+  function actions(user: Member) {
+    const isMe = user.id === me.id;
+    const manage = manageCheck(user);
+    const disabled = !isMe && roleOptions(user).length === 0 && !manage.ok;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" aria-label={`Actions for ${user.name}`} disabled={locked} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30">
+          <button type="button" aria-label={`Actions for ${user.name}`} disabled={disabled} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30">
             <Ellipsis className="size-4" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-48">
-          <DropdownMenuLabel>Role</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={user.role} onValueChange={(v) => changeRole(user, v as Role)}>
-            {ROLES.filter((r) => r !== "Owner").map((r) => (
-              <DropdownMenuRadioItem key={r} value={r}>
-                <ShieldCheck /> {r}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          {user.status === "Invited" && (
-            <DropdownMenuItem
-              onSelect={() => {
-                resendInvite(user.id);
-                toast.success(`Invite re-sent to ${user.email}`);
-              }}
-            >
-              <MailPlus /> Resend invite
-            </DropdownMenuItem>
+        <DropdownMenuContent className="w-60">
+          {canManage && (
+            <>
+              <DropdownMenuLabel>Role in {state.organization.name}</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={user.role} onValueChange={(v) => changeRole(user, v as Role)}>
+                {ROLES.map((r) => (
+                  <DropdownMenuRadioItem key={r} value={r} disabled={r !== user.role && !roleCheck(user, r).ok}>
+                    <ShieldCheck /> {r}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+              {isLastOwner(user) && (
+                <p className="flex gap-2 px-2.5 pb-2 text-xs text-muted-foreground">
+                  <Info className="mt-0.5 size-3.5 shrink-0" /> {LAST_OWNER_MESSAGE}
+                </p>
+              )}
+            </>
           )}
-          <DropdownMenuItem
-            onSelect={() => {
-              const next = user.status === "Inactive" ? "Active" : "Inactive";
-              updateMember(user.id, { status: next });
-              toast.success(`${user.name} ${next === "Active" ? "reactivated" : "deactivated"}`);
-            }}
-          >
-            <Users /> {user.status === "Inactive" ? "Reactivate" : "Deactivate"}
-          </DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => setRemoving(user)}>
-            <Trash2 /> Remove from workspace
-          </DropdownMenuItem>
+          {!isMe && manage.ok && (
+            <>
+              <DropdownMenuSeparator />
+              {user.status === "Invited" && (
+                <DropdownMenuItem onSelect={() => toast.success(`Invite re-sent to ${user.email}`)}>
+                  <MailPlus /> Resend invite
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onSelect={() => {
+                  const next = user.status === "Inactive" ? "Active" : "Inactive";
+                  setStatus(user, next, `${user.name} ${next === "Active" ? "reactivated" : "deactivated"}`);
+                }}
+              >
+                <Users /> {user.status === "Inactive" ? "Reactivate" : "Deactivate"}
+              </DropdownMenuItem>
+              <DropdownMenuItem destructive onSelect={() => setRemoving(user)}>
+                <Trash2 /> Remove from workspace
+              </DropdownMenuItem>
+            </>
+          )}
+          {isMe && (
+            <>
+              {canManage && <DropdownMenuSeparator />}
+              <DropdownMenuItem destructive onSelect={() => setLeaving(true)}>
+                <LogOut /> Leave workspace
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
+    );
+  }
+
+  function roleCell(u: Member) {
+    const options = roleOptions(u);
+    if (options.length === 0) {
+      const badge = <Badge className={ROLE_STYLES[u.role]}>{u.role}</Badge>;
+      return canManage && isLastOwner(u) ? (
+        <Tooltip content="Every workspace must have at least one Owner">
+          <span tabIndex={0}>{badge}</span>
+        </Tooltip>
+      ) : (
+        badge
+      );
+    }
+    return (
+      <select
+        value={u.role}
+        onChange={(e) => changeRole(u, e.target.value as Role)}
+        aria-label={`Role for ${u.name}`}
+        className={cn("h-7 cursor-pointer rounded-full border-0 px-2.5 text-xs font-medium outline-none", ROLE_STYLES[u.role])}
+      >
+        {ROLES.filter((r) => r === u.role || options.includes(r)).map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
     );
   }
 
@@ -193,7 +260,6 @@ function TeamContent() {
               <tbody className="divide-y divide-border">
                 {members.map((u) => {
                   const s = stats.get(u.id);
-                  const locked = u.role === "Owner" || u.id === me.id || !canManage;
                   return (
                     <tr key={u.id} className="transition hover:bg-lavender">
                       <td className="py-3 pl-5">
@@ -209,21 +275,7 @@ function TeamContent() {
                         </div>
                       </td>
                       <td className="hidden py-3 text-muted-foreground lg:table-cell">{u.email}</td>
-                      <td className="py-3">
-                        {locked ? (
-                          <Badge className={ROLE_STYLES[u.role]}>{u.role}</Badge>
-                        ) : (
-                          <select
-                            value={u.role}
-                            onChange={(e) => changeRole(u, e.target.value as Role)}
-                            aria-label={`Role for ${u.name}`}
-                            className={cn("h-7 cursor-pointer rounded-full border-0 px-2.5 text-xs font-medium outline-none", ROLE_STYLES[u.role])}
-                          >
-                            <option value="Admin">Admin</option>
-                            <option value="Member">Member</option>
-                          </select>
-                        )}
-                      </td>
+                      <td className="py-3">{roleCell(u)}</td>
                       <td className="py-3">
                         <Badge className={STATUS_STYLES[u.status]}>{u.status}</Badge>
                       </td>
@@ -247,7 +299,9 @@ function TeamContent() {
                 <li key={u.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
                   <UserAvatar user={u} size="lg" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{u.name}</p>
+                    <p className="truncate font-semibold">
+                      {u.name} {u.id === me.id && <span className="text-xs font-normal text-muted-foreground">(you)</span>}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <Badge className={ROLE_STYLES[u.role]}>{u.role}</Badge>
@@ -277,12 +331,16 @@ function TeamContent() {
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
         title={`Remove ${removing?.name}?`}
-        description="They will lose access and be unassigned from all tasks and projects."
+        description={`They will lose access to ${state.organization.name} and be unassigned from its tasks and projects. Their other workspaces aren't affected.`}
         confirmLabel="Remove member"
         onConfirm={() => {
-          if (removing && removeMember(removing.id)) toast.success(`${removing.name} removed`);
+          if (!removing) return;
+          const result = removeOrganizationMember(removing.membershipId);
+          if (result.ok) toast.success(`${removing.name} removed`);
+          else toast.error(result.error);
         }}
       />
+      <LeaveWorkspaceDialog organization={leaving ? state.organization : null} onOpenChange={(open) => !open && setLeaving(false)} />
     </div>
   );
 }

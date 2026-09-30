@@ -6,6 +6,7 @@ import { CommandSearch } from "@/components/layout/command-search";
 import { ProjectFormDialog } from "@/components/projects/project-form-dialog";
 import { TaskDrawer } from "@/components/tasks/task-drawer";
 import { TaskFormDialog, type TaskFormDefaults } from "@/components/tasks/task-form-dialog";
+import { CreateWorkspaceDialog } from "@/components/workspace/create-workspace-dialog";
 import type { ID } from "@/types";
 
 interface UIContextValue {
@@ -14,6 +15,7 @@ interface UIContextValue {
   closeTask: () => void;
   openCreateTask: (defaults?: TaskFormDefaults) => void;
   openCreateProject: () => void;
+  openCreateWorkspace: () => void;
   openSearch: () => void;
 }
 
@@ -48,11 +50,13 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [taskDefaults, setTaskDefaults] = useState<TaskFormDefaults | null>(null);
   const [projectOpen, setProjectOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   const openTask = useCallback((id: ID) => setActiveTaskId(id), []);
   const closeTask = useCallback(() => setActiveTaskId(null), []);
   const openCreateTask = useCallback((defaults: TaskFormDefaults = {}) => setTaskDefaults(defaults), []);
   const openCreateProject = useCallback(() => setProjectOpen(true), []);
+  const openCreateWorkspace = useCallback(() => setWorkspaceOpen(true), []);
   const openSearch = useCallback(() => setSearchOpen(true), []);
 
   useEffect(() => {
@@ -67,8 +71,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ activeTaskId, openTask, closeTask, openCreateTask, openCreateProject, openSearch }),
-    [activeTaskId, openTask, closeTask, openCreateTask, openCreateProject, openSearch],
+    () => ({ activeTaskId, openTask, closeTask, openCreateTask, openCreateProject, openCreateWorkspace, openSearch }),
+    [activeTaskId, openTask, closeTask, openCreateTask, openCreateProject, openCreateWorkspace, openSearch],
   );
 
   return (
@@ -84,6 +88,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
         onOpenChange={(open) => !open && setTaskDefaults(null)}
       />
       <ProjectFormDialog open={projectOpen} onOpenChange={setProjectOpen} />
+      <CreateWorkspaceDialog open={workspaceOpen} onOpenChange={setWorkspaceOpen} />
       <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </UIContext.Provider>
   );

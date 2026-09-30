@@ -13,14 +13,14 @@ import { Progress } from "@/components/ui/progress";
 import { HOLIDAY_KIND_LABELS, HOLIDAY_KIND_STYLES } from "@/constants";
 import { formatDays, fromDateKey, toDateKey } from "@/lib/time-off";
 import { canCancelLeave, cancelLeave } from "@/store/actions/time-off";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { holidaysFor, leaveBalances } from "@/store/selectors";
 import type { LeaveRequest } from "@/types";
 import { formatLeaveRange, LeaveRequestItem } from "./leave-request-item";
 import { useLeaveLink } from "./use-leave-link";
 
 export function MyLeavePanel({ onRequest }: { onRequest: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const { openLeave } = useLeaveLink();
   const [cancelling, setCancelling] = useState<LeaveRequest | null>(null);

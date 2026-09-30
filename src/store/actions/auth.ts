@@ -1,6 +1,7 @@
 import { CURRENT_USER_ID } from "@/store/seed";
 import { DEMO_CREDENTIALS } from "@/constants";
 import { uid } from "@/lib/utils";
+import { resolveActiveOrganizationId } from "@/store/organization";
 import { flushPersistence, getState, setState } from "@/store/store";
 import type { User } from "@/types";
 import { now } from "./internal";
@@ -16,14 +17,21 @@ function nameFromEmail(email: string): string {
     .join(" ");
 }
 
+/**
+ * Authentication only establishes *who* the user is. Which workspaces they can
+ * open comes from their organization memberships, resolved here for the new session.
+ */
 function startSession(userId: string) {
-  setState((s) => ({ ...s, session: { userId, signedInAt: now() } }));
+  setState((s) => {
+    const next = { ...s, session: { userId, signedInAt: now() } };
+    return { ...next, activeOrganizationId: resolveActiveOrganizationId(next, userId) };
+  });
   flushPersistence();
 }
 
 /**
- * Fake sign-in. The demo account (or any existing member's email) signs in as
- * that member; any other valid email creates a new workspace member.
+ * Fake sign-in. The demo account (or any existing user's email) signs in as
+ * that user; any other valid email creates a new account with no workspace yet.
  */
 export function signIn(email: string): User {
   const normalized = email.trim().toLowerCase();
@@ -46,10 +54,8 @@ export function signUp(name: string, email: string): User {
     name: name.trim(),
     email: email.trim().toLowerCase(),
     title: "Team member",
-    role: "Member",
-    status: "Active",
     color: AVATAR_COLORS[state.users.length % AVATAR_COLORS.length],
-    joinedAt: now(),
+    createdAt: now(),
   };
   setState((s) => ({ ...s, users: [...s.users, user] }));
   startSession(user.id);

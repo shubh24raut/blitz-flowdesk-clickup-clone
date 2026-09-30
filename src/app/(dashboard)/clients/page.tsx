@@ -26,11 +26,11 @@ import {
 import { CLIENT_STATUSES } from "@/constants";
 import { pluralize } from "@/lib/utils";
 import { deleteClient, setClientStatus } from "@/store/actions/clients";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Client, ClientStatus } from "@/types";
 
 export default function ClientsPage() {
-  const state = useAppState();
+  const state = useWorkspace();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | ClientStatus>("all");

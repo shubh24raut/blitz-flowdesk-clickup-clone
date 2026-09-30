@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, LogOut, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
+import { Check, Layers, LogOut, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LANGUAGES } from "@/constants";
 import { cn } from "@/lib/utils";
 import { resetDemoData, updateNotificationPreferences, updateSettings } from "@/store/actions/settings";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { NotificationPreferences, ThemePreference } from "@/types";
 
 const TABS = ["profile", "organization", "appearance", "notifications", "data"] as const;
@@ -40,7 +41,7 @@ const NOTIFICATIONS: Array<{ key: keyof NotificationPreferences; label: string; 
 ];
 
 function SettingsContent() {
-  const state = useAppState();
+  const state = useWorkspace();
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -51,7 +52,17 @@ function SettingsContent() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <PageHeader title="Settings" description="Manage your profile, workspace and preferences." />
+      <PageHeader
+        title="Settings"
+        description={`Your profile and preferences, and settings for ${state.organization.name}.`}
+        actions={
+          <Button asChild variant="secondary">
+            <Link href="/settings/workspaces">
+              <Layers /> Manage workspaces
+            </Link>
+          </Button>
+        }
+      />
       <Tabs value={tab} onValueChange={(v) => router.replace(`${pathname}?tab=${v}`, { scroll: false })}>
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>

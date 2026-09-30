@@ -9,19 +9,26 @@ import {
   overlappingLeave,
 } from "@/store/selectors";
 import { getState, setState } from "@/store/store";
-import type { Holiday, HolidayCalendar, ID, LeaveRequest, LeaveType } from "@/types";
+import type { AppState, Holiday, HolidayCalendar, ID, LeaveRequest, LeaveType, Organization } from "@/types";
 import type { HolidayCandidate } from "@/lib/holidays";
 import type { HolidayInput } from "@/validators/holiday.validator";
 import type { LeaveRequestInput, LeaveReviewInput, LeaveTypeInput } from "@/validators/leave.validator";
-import { actorId, now, replaceById } from "./internal";
+import { actorId, activeOrgId, now, replaceById, workspace, type Result } from "./internal";
+import { updateOrganization } from "./organizations";
 
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+export type { Result } from "./internal";
+
+/*
+ * Every time-off record belongs to one organization: working week, leave types,
+ * calendars, holidays and requests are never shared between workspaces. Reads go
+ * through `workspace()`, so lookups can't reach another organization's records.
+ */
 
 /* ---------------------------------- Requests --------------------------------- */
 
 export function requestLeave(input: LeaveRequestInput): Result<LeaveRequest> {
-  const state = getState();
-  const me = actorId(state);
+  const state = workspace();
+  const me = actorId(getState());
   const type = state.leaveTypes.find((t) => t.id === input.typeId);
   if (!type) return { ok: false, error: "That leave type no longer exists." };
 
@@ -42,6 +49,7 @@ export function requestLeave(input: LeaveRequestInput): Result<LeaveRequest> {
   const autoApproved = !type.requiresApproval;
   const request: LeaveRequest = {
     id: uid("lr"),
+    organizationId: state.organization.id,
     userId: me,
     typeId: type.id,
     startDate: input.startDate,
@@ -67,16 +75,16 @@ export function canCancelLeave(request: LeaveRequest, userId: ID): boolean {
 }
 
 export function cancelLeave(id: ID): boolean {
-  const state = getState();
-  const request = state.leaveRequests.find((r) => r.id === id);
-  if (!request || !canCancelLeave(request, actorId(state))) return false;
+  const request = workspace().leaveRequests.find((r) => r.id === id);
+  if (!request || !canCancelLeave(request, actorId(getState()))) return false;
   setState((s) => ({ ...s, leaveRequests: replaceById(s.leaveRequests, id, (r) => ({ ...r, status: "Cancelled" })) }));
   return true;
 }
 
 export function reviewLeave(id: ID, review: LeaveReviewInput): Result<LeaveRequest> {
-  const state = getState();
-  const reviewer = indexes(state).users.get(actorId(state));
+  const state = workspace();
+  // `reviewer.role` is the reviewer's role in this organization, not a global one.
+  const reviewer = indexes(state).users.get(actorId(getState()));
   const request = state.leaveRequests.find((r) => r.id === id);
   if (!reviewer || !request) return { ok: false, error: "Request not found." };
   if (!canReviewLeave(reviewer, request)) return { ok: false, error: "Only owners and admins can review other people's pending requests." };
@@ -88,7 +96,7 @@ export function reviewLeave(id: ID, review: LeaveReviewInput): Result<LeaveReque
 /* -------------------------------- Leave types -------------------------------- */
 
 export function createLeaveType(input: LeaveTypeInput): LeaveType {
-  const type: LeaveType = { id: uid("lt"), ...input, name: input.name.trim() };
+  const type: LeaveType = { id: uid("lt"), organizationId: activeOrgId(getState()), ...input, name: input.name.trim() };
   setState((s) => ({ ...s, leaveTypes: [...s.leaveTypes, type] }));
   return type;
 }
@@ -99,7 +107,7 @@ export function updateLeaveType(id: ID, input: LeaveTypeInput) {
 
 /** Refuses when requests use the type, so history stays readable. */
 export function deleteLeaveType(id: ID): boolean {
-  if (getState().leaveRequests.some((r) => r.typeId === id)) return false;
+  if (workspace().leaveRequests.some((r) => r.typeId === id)) return false;
   setState((s) => ({ ...s, leaveTypes: s.leaveTypes.filter((t) => t.id !== id) }));
   return true;
 }
@@ -107,7 +115,7 @@ export function deleteLeaveType(id: ID): boolean {
 /* ---------------------------------- Holidays --------------------------------- */
 
 export function addHoliday(input: HolidayInput): Holiday {
-  const holiday: Holiday = { id: uid("hol"), ...input, name: input.name.trim() };
+  const holiday: Holiday = { id: uid("hol"), organizationId: activeOrgId(getState()), ...input, name: input.name.trim() };
   setState((s) => ({ ...s, holidays: [...s.holidays, holiday] }));
   return holiday;
 }
@@ -120,62 +128,82 @@ export function deleteHoliday(id: ID) {
   setState((s) => ({ ...s, holidays: s.holidays.filter((h) => h.id !== id) }));
 }
 
+function withOrganization(state: AppState, organizationId: ID, update: (org: Organization) => Organization): AppState {
+  return { ...state, organizations: replaceById(state.organizations, organizationId, update) };
+}
+
 /**
- * Adds imported national holidays to the calendar for that country/region, creating it if needed.
- * Holidays already on the calendar (same date and name) are skipped, so re-importing is safe.
+ * Adds imported national holidays to the active organization's calendar for that
+ * country/region, creating it if needed. Holidays already on the calendar (same
+ * date and name) are skipped, so re-importing is safe.
  */
 export function importHolidays(
   source: { countryCode: string; regionCode: string | null; name: string },
   candidates: HolidayCandidate[],
 ): { calendar: HolidayCalendar; added: number } {
-  const state = getState();
+  const state = workspace();
+  const organizationId = state.organization.id;
   const calendar: HolidayCalendar = state.holidayCalendars.find(
     (c) => c.countryCode === source.countryCode && c.regionCode === source.regionCode,
-  ) ?? { id: uid("hc"), name: source.name, countryCode: source.countryCode, regionCode: source.regionCode };
+  ) ?? { id: uid("hc"), organizationId, name: source.name, countryCode: source.countryCode, regionCode: source.regionCode };
   const existing = new Set(state.holidays.filter((h) => h.calendarId === calendar.id).map((h) => `${h.date}|${h.name}`));
   const fresh = candidates
     .filter((c) => !existing.has(`${c.date}|${c.name}`))
-    .map((c): Holiday => ({ id: uid("hol"), calendarId: calendar.id, name: c.name, date: c.date, kind: c.kind }));
+    .map((c): Holiday => ({ id: uid("hol"), organizationId, calendarId: calendar.id, name: c.name, date: c.date, kind: c.kind }));
 
   setState((s) => {
     const isNew = !s.holidayCalendars.some((c) => c.id === calendar.id);
-    return {
-      ...s,
-      holidayCalendars: isNew ? [...s.holidayCalendars, calendar] : s.holidayCalendars,
-      holidays: [...s.holidays, ...fresh],
-      organization: s.organization.defaultHolidayCalendarId
-        ? s.organization
-        : { ...s.organization, defaultHolidayCalendarId: calendar.id },
-    };
+    return withOrganization(
+      { ...s, holidayCalendars: isNew ? [...s.holidayCalendars, calendar] : s.holidayCalendars, holidays: [...s.holidays, ...fresh] },
+      organizationId,
+      (org) => (org.defaultHolidayCalendarId ? org : { ...org, defaultHolidayCalendarId: calendar.id }),
+    );
   });
   return { calendar, added: fresh.length };
 }
 
 /** Deletes a calendar and its holidays; members on it fall back to the organization default. */
 export function deleteHolidayCalendar(id: ID) {
-  setState((s) => ({
-    ...s,
-    holidayCalendars: s.holidayCalendars.filter((c) => c.id !== id),
-    holidays: s.holidays.filter((h) => h.calendarId !== id),
-    users: s.users.map((u) => (u.holidayCalendarId === id ? { ...u, holidayCalendarId: null } : u)),
-    organization:
-      s.organization.defaultHolidayCalendarId === id
-        ? { ...s.organization, defaultHolidayCalendarId: s.holidayCalendars.find((c) => c.id !== id)?.id ?? null }
-        : s.organization,
-  }));
+  const calendar = workspace().holidayCalendars.find((c) => c.id === id);
+  if (!calendar) return;
+  setState((s) =>
+    withOrganization(
+      {
+        ...s,
+        holidayCalendars: s.holidayCalendars.filter((c) => c.id !== id),
+        holidays: s.holidays.filter((h) => h.calendarId !== id),
+        organizationMembers: s.organizationMembers.map((m) => (m.holidayCalendarId === id ? { ...m, holidayCalendarId: null } : m)),
+      },
+      calendar.organizationId,
+      (org) =>
+        org.defaultHolidayCalendarId === id
+          ? {
+              ...org,
+              defaultHolidayCalendarId:
+                s.holidayCalendars.find((c) => c.id !== id && c.organizationId === calendar.organizationId)?.id ?? null,
+            }
+          : org,
+    ),
+  );
 }
 
 /* ---------------------------------- Policies --------------------------------- */
 
 export function setWorkingDays(workingDays: number[]) {
-  setState((s) => ({ ...s, organization: { ...s.organization, workingDays: [...workingDays].sort((a, b) => a - b) } }));
+  return updateOrganization(activeOrgId(getState()), { workingDays: [...workingDays].sort((a, b) => a - b) });
 }
 
 export function setDefaultHolidayCalendar(id: ID | null) {
-  setState((s) => ({ ...s, organization: { ...s.organization, defaultHolidayCalendarId: id } }));
+  if (id && !workspace().holidayCalendars.some((c) => c.id === id)) return;
+  return updateOrganization(activeOrgId(getState()), { defaultHolidayCalendarId: id });
 }
 
-/** `null` puts the member back on the organization default. */
+/** Holiday calendars are chosen per membership. `null` puts the member back on the organization default. */
 export function setMemberHolidayCalendar(userId: ID, calendarId: ID | null) {
-  setState((s) => ({ ...s, users: replaceById(s.users, userId, (u) => ({ ...u, holidayCalendarId: calendarId })) }));
+  const member = workspace().users.find((u) => u.id === userId);
+  if (!member) return;
+  setState((s) => ({
+    ...s,
+    organizationMembers: replaceById(s.organizationMembers, member.membershipId, (m) => ({ ...m, holidayCalendarId: calendarId })),
+  }));
 }

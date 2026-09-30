@@ -11,13 +11,13 @@ import { Card } from "@/components/ui/card";
 import { toDate } from "@/lib/dates";
 import { cn, withAlpha } from "@/lib/utils";
 import { getProjectStages, getProjectTasks, indexes } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 const DAY_WIDTH = 28;
 
 export default function ProjectTimelinePage() {
   const project = useProject();
-  const state = useAppState();
+  const state = useWorkspace();
   const { openTask } = useUI();
   const stages = getProjectStages(state, project.id);
   const tasks = getProjectTasks(state, project.id);

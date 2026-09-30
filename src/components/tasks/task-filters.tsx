@@ -15,7 +15,7 @@ import {
 import { PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { cn } from "@/lib/utils";
 import { isTaskDone } from "@/store/selectors";
-import type { AppState, ID, Priority, Task, User } from "@/types";
+import type { ID, Priority, Task, User, WorkspaceState } from "@/types";
 
 export interface TaskFilterState {
   priorities: Priority[];
@@ -30,7 +30,7 @@ export function activeFilterCount(f: TaskFilterState): number {
   return f.priorities.length + f.assigneeIds.length + (f.hideCompleted ? 1 : 0) + (f.dueWindow !== "any" ? 1 : 0);
 }
 
-export function applyTaskFilters(state: AppState, tasks: Task[], search: string, f: TaskFilterState): Task[] {
+export function applyTaskFilters(state: WorkspaceState, tasks: Task[], search: string, f: TaskFilterState): Task[] {
   const q = search.trim().toLowerCase();
   const now = new Date();
   const weekAhead = new Date(now.getTime() + 7 * 86_400_000);

@@ -16,7 +16,7 @@ import { PRIORITIES, PRIORITY_RANK, PRIORITY_STYLES } from "@/constants";
 import { daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { taskPhase, type Phase } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { Task } from "@/types";
 
 type Scope = "mine" | "all" | "created";
@@ -39,7 +39,7 @@ const DUE_BUCKETS = [
 ] as const;
 
 function TasksContent() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const params = useSearchParams();
   const { openCreateTask } = useUI();

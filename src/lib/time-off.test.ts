@@ -3,7 +3,7 @@ import type { Holiday } from "@/types";
 import { countLeaveDays, daysOffFrom, eachDateKey, rangesOverlap } from "./time-off";
 
 const MON_FRI = [1, 2, 3, 4, 5];
-const holiday = (date: string, kind: Holiday["kind"] = "public"): Holiday => ({ id: date, calendarId: null, name: "H", date, kind });
+const holiday = (date: string, kind: Holiday["kind"] = "public"): Holiday => ({ id: date, organizationId: "org", calendarId: null, name: "H", date, kind });
 
 describe("eachDateKey", () => {
   it("is inclusive and crosses month boundaries", () => {

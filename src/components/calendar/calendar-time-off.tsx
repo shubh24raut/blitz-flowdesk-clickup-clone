@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { AvatarStack } from "@/components/shared/avatar";
 import { eachDateKey, toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { holidaysFor, indexes } from "@/store/selectors";
 import type { Holiday, User } from "@/types";
 
@@ -18,7 +18,7 @@ const EMPTY: DayTimeOff = { holidays: [], out: [] };
 
 /** Holidays on the viewer's calendar and teammates on approved leave, looked up by day. */
 export function useCalendarTimeOff(): (day: Date) => DayTimeOff {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const byDay = useMemo(() => {
     const map = new Map<string, DayTimeOff>();

@@ -11,7 +11,7 @@ import { RoundCheck } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { setTaskCompleted } from "@/store/actions/tasks";
 import { getUsers, indexes, taskKey } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Task } from "@/types";
 
 export interface TaskGroup {
@@ -90,7 +90,7 @@ export function TaskListView({ groups, showProject, showStage }: { groups: TaskG
 }
 
 function TaskRow({ task, showProject, showStage }: { task: Task; showProject?: boolean; showStage?: boolean }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const { openTask } = useUI();
   const idx = indexes(state);
   const stage = idx.stages.get(task.stageId);

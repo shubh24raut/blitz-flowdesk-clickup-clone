@@ -1,7 +1,7 @@
 import { uid } from "@/lib/utils";
 import { getState, setState } from "@/store/store";
 import type { Client, ClientContact, ClientStatus, ID } from "@/types";
-import { now, replaceById, withActivity } from "./internal";
+import { activeOrgId, now, replaceById, withActivity, workspace } from "./internal";
 
 export type ClientInput = Pick<
   Client,
@@ -12,6 +12,7 @@ export function createClient(input: ClientInput): Client {
   const client: Client = {
     ...input,
     id: uid("c"),
+    organizationId: activeOrgId(getState()),
     contacts: input.contactPerson
       ? [{ id: uid("cc"), name: input.contactPerson, role: "Primary contact", email: input.email, phone: input.phone }]
       : [],
@@ -23,7 +24,7 @@ export function createClient(input: ClientInput): Client {
   return client;
 }
 
-export function updateClient(id: ID, patch: Partial<Omit<Client, "id">>) {
+export function updateClient(id: ID, patch: Partial<Omit<Client, "id" | "organizationId">>) {
   setState((s) => {
     const client = s.clients.find((c) => c.id === id);
     if (!client) return s;
@@ -33,7 +34,7 @@ export function updateClient(id: ID, patch: Partial<Omit<Client, "id">>) {
 }
 
 export function setClientStatus(id: ID, status: ClientStatus) {
-  const client = getState().clients.find((c) => c.id === id);
+  const client = workspace().clients.find((c) => c.id === id);
   if (!client || client.status === status) return;
   setState((s) =>
     withActivity(

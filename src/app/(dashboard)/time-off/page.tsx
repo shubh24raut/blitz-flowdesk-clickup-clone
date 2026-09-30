@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TabCount, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isDateKey } from "@/lib/time-off";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { canReviewLeave, isTimeOffAdmin } from "@/store/selectors";
 
 const TABS = ["mine", "approvals", "team", "holidays", "policies"] as const;
@@ -24,7 +24,7 @@ type Tab = (typeof TABS)[number];
 const ADMIN_TABS: Tab[] = ["approvals", "policies"];
 
 function TimeOffContent() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const params = useSearchParams();
   const router = useRouter();

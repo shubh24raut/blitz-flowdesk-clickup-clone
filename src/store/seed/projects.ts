@@ -1,7 +1,8 @@
 import type { Project, Stage } from "@/types";
+import type { Unscoped } from "./organizations";
 import { daysFromNow } from "./time";
 
-export function seedProjects(): Project[] {
+export function seedProjects(): Unscoped<Project>[] {
   return [
     {
       id: "p_web",

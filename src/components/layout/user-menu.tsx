@@ -20,13 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { resetDemoData, updateSettings } from "@/store/actions/settings";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { ThemePreference } from "@/types";
 import { useLogout } from "@/hooks/use-logout";
 
 export function UserMenu() {
   const user = useCurrentUser();
-  const theme = useAppState().settings.theme;
+  const theme = useWorkspace().settings.theme;
   const logout = useLogout();
   const [confirmReset, setConfirmReset] = useState(false);
 

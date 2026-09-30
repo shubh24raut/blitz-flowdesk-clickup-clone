@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter } from "@/components/ui
 import { Field, FieldError, Textarea } from "@/components/ui/input";
 import { eachDateKey, formatDays } from "@/lib/time-off";
 import { reviewLeave } from "@/store/actions/time-off";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import { approvedLeaveOn, indexes } from "@/store/selectors";
 import type { LeaveRequest } from "@/types";
 import { formatLeaveRange } from "./leave-request-item";
@@ -35,7 +35,7 @@ export function ReviewLeaveDialog({
 }
 
 function ReviewForm({ request, decision, onDone }: { request: LeaveRequest; decision: ReviewDecision; onDone: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const user = indexes(state).users.get(request.userId);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();

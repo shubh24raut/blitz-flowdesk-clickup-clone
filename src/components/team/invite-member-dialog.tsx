@@ -10,22 +10,26 @@ import { Field, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { wait } from "@/lib/utils";
 import { inviteMember } from "@/store/actions/team";
+import { useWorkspace } from "@/store/hooks";
+import { selectWorkspace } from "@/store/selectors";
 import { getState } from "@/store/store";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Enter their name"),
   email: z
     .email("Enter a valid email")
-    .refine((e) => !getState().users.some((u) => u.email.toLowerCase() === e.toLowerCase()), "This person is already in the workspace"),
+    // Only this workspace matters: someone from another workspace can still be invited here.
+    .refine((e) => !selectWorkspace(getState()).users.some((u) => u.email.toLowerCase() === e.toLowerCase()), "This person is already in the workspace"),
   role: z.enum(["Admin", "Member"]),
   title: z.string().trim(),
 });
 type FormValues = z.infer<typeof schema>;
 
 export function InviteMemberDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { organization } = useWorkspace();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title="Invite member" description="They'll get an email invite to join your workspace (simulated)." size="sm">
+      <DialogContent title="Invite member" description={`They'll get an email invite to join ${organization.name} (simulated).`} size="sm">
         {open && <InviteForm onDone={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
@@ -42,8 +46,12 @@ function InviteForm({ onDone }: { onDone: () => void }) {
 
   async function onSubmit(values: FormValues) {
     await wait(500);
-    const user = inviteMember(values);
-    toast.success(`Invitation sent to ${user.email}`);
+    const result = inviteMember(values);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`Invitation sent to ${values.email.trim().toLowerCase()}`);
     onDone();
   }
 

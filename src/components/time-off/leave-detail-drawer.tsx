@@ -16,15 +16,15 @@ import { formatLong, formatRelative } from "@/lib/dates";
 import { eachDateKey, formatDays, fromDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { canCancelLeave, cancelLeave } from "@/store/actions/time-off";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { approvedLeaveOn, canReviewLeave, holidaysFor, indexes, isTimeOffAdmin, leaveBalances } from "@/store/selectors";
-import type { AppState, DateKey, Holiday, LeaveRequest, User } from "@/types";
+import type { DateKey, Holiday, LeaveRequest, Member, WorkspaceState } from "@/types";
 import { formatLeaveRange } from "./leave-request-item";
 import { ReviewLeaveDialog, type ReviewDecision } from "./review-leave-dialog";
 
 /** Right-side drawer on desktop, full-screen sheet on phones — same shell as the task drawer. */
 export function LeaveDetailDrawer({ requestId, onClose }: { requestId: string | null; onClose: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const request = requestId ? state.leaveRequests.find((r) => r.id === requestId) : undefined;
 
   return (
@@ -66,9 +66,9 @@ export function LeaveDetailDrawer({ requestId, onClose }: { requestId: string | 
   );
 }
 
-type DayRow = { key: DateKey; status: "counted" | "weekend" | "holiday"; holiday?: Holiday; othersOut: User[] };
+type DayRow = { key: DateKey; status: "counted" | "weekend" | "holiday"; holiday?: Holiday; othersOut: Member[] };
 
-function buildDays(state: AppState, request: LeaveRequest): DayRow[] {
+function buildDays(state: WorkspaceState, request: LeaveRequest): DayRow[] {
   const idx = indexes(state);
   const holidays = new Map(
     holidaysFor(state, request.userId)
@@ -79,7 +79,7 @@ function buildDays(state: AppState, request: LeaveRequest): DayRow[] {
     const othersOut = approvedLeaveOn(state, key)
       .filter((r) => r.userId !== request.userId)
       .map((r) => idx.users.get(r.userId))
-      .filter((u): u is User => Boolean(u));
+      .filter((u): u is Member => Boolean(u));
     if (!state.organization.workingDays.includes(fromDateKey(key).getDay())) return { key, status: "weekend", othersOut };
     const holiday = holidays.get(key);
     if (holiday) return { key, status: "holiday", holiday, othersOut };
@@ -100,7 +100,7 @@ function Section({ title, children, aside }: { title: string; children: ReactNod
 }
 
 function LeaveDetail({ request }: { request: LeaveRequest }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const idx = indexes(state);
   const user = idx.users.get(request.userId);

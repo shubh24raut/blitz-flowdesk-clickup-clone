@@ -16,14 +16,14 @@ import { PROJECT_STATUSES } from "@/constants";
 import { cn } from "@/lib/utils";
 import { archiveProject, deleteProject } from "@/store/actions/projects";
 import { getUsers, indexes, projectProgress } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Project, ProjectStatus } from "@/types";
 
 type StatusFilter = "All" | ProjectStatus;
 type Sort = "recent" | "due" | "name" | "progress";
 
 export default function ProjectsPage() {
-  const state = useAppState();
+  const state = useWorkspace();
   const { openCreateProject } = useUI();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("All");
@@ -100,8 +100,18 @@ export default function ProjectsPage() {
       {projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title={search || clientId !== "all" ? "No projects match your filters" : `No ${status === "All" ? "" : status.toLowerCase()} projects`}
-          description="Create a project to start organising tasks with your own workflow stages."
+          title={
+            state.projects.length === 0
+              ? "No projects yet"
+              : search || clientId !== "all"
+                ? "No projects match your filters"
+                : `No ${status === "All" ? "" : `${status.toLowerCase()} `}projects`
+          }
+          description={
+            state.projects.length === 0
+              ? "Create your first project to start organizing your work."
+              : "Create a project to start organising tasks with your own workflow stages."
+          }
           action={
             <Button onClick={openCreateProject}>
               <Plus /> New Project

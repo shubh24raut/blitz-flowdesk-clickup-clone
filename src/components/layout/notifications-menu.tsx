@@ -10,10 +10,10 @@ import { formatRelative } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { clearNotifications, markAllNotificationsRead, markNotificationRead } from "@/store/actions/settings";
 import { indexes } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 export function NotificationsMenu() {
-  const state = useAppState();
+  const state = useWorkspace();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "unread">("all");

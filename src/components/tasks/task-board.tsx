@@ -25,9 +25,9 @@ import { COLOR_OPTIONS, PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { arrayMove } from "@/lib/utils";
 import { addStage, reorderStages } from "@/store/actions/stages";
 import { moveTask, updateTask } from "@/store/actions/tasks";
-import { getProjectStages, getStageTasks, getUsers, indexes } from "@/store/selectors";
+import { getProjectStages, getStageTasks, getUsers, indexes, selectWorkspace } from "@/store/selectors";
 import { getState } from "@/store/store";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Priority, Project, Stage, Task } from "@/types";
 import { TaskCard } from "./task-card";
 import { TaskColumn, type CardData, type ColumnMeta } from "./task-column";
@@ -62,7 +62,7 @@ export function TaskBoard({
   tasks: Task[];
   groupBy: "stage" | "priority";
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const stages = getProjectStages(state, project.id);
   const idx = indexes(state);
   const [dragColumns, setDragColumns] = useState<Columns | null>(null);
@@ -140,7 +140,7 @@ export function TaskBoard({
   }
 
   function commit(taskId: string, columnId: string, ordered: string[]) {
-    const fresh = getState();
+    const fresh = selectWorkspace(getState());
     const task = fresh.tasks.find((t) => t.id === taskId);
     if (!task) return;
 

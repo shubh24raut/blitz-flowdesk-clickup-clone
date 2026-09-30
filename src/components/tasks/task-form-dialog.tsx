@@ -1,13 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Paperclip, X } from "lucide-react";
+import { FolderKanban, Paperclip, Plus, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { acceptFiles } from "@/components/attachments/file-dropzone";
 import { useUI } from "@/components/providers/ui-provider";
+import { EmptyState } from "@/components/shared/empty-state";
 import { MarkdownEditor } from "@/components/shared/markdown-editor";
 import { UserPicker } from "@/components/shared/pickers";
 import { TagInput } from "@/components/shared/tag-input";
@@ -22,7 +23,7 @@ import { cn, formatBytes, wait } from "@/lib/utils";
 import { addAttachments } from "@/store/actions/attachments";
 import { createTask } from "@/store/actions/tasks";
 import { getProjectStages } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { ID } from "@/types";
 
 export interface TaskFormDefaults {
@@ -53,17 +54,38 @@ export function TaskFormDialog({
   defaults: TaskFormDefaults;
   onOpenChange: (open: boolean) => void;
 }) {
+  const hasProjects = useWorkspace().projects.some((p) => p.status !== "Archived");
+  const { openCreateProject } = useUI();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title="Create Task" size="xl">
-        {open && <TaskForm defaults={defaults} onDone={() => onOpenChange(false)} />}
+      <DialogContent title="Create Task" size={hasProjects ? "xl" : "sm"}>
+        {open && !hasProjects && (
+          <EmptyState
+            compact
+            icon={FolderKanban}
+            title="Create a project first"
+            description="Tasks live inside projects. Start one to organize this workspace's work."
+            className="pb-10"
+            action={
+              <Button
+                onClick={() => {
+                  onOpenChange(false);
+                  openCreateProject();
+                }}
+              >
+                <Plus /> Create project
+              </Button>
+            }
+          />
+        )}
+        {open && hasProjects && <TaskForm defaults={defaults} onDone={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
   );
 }
 
 function TaskForm({ defaults, onDone }: { defaults: TaskFormDefaults; onDone: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const { openTask } = useUI();
   const [files, setFiles] = useState<File[]>([]);

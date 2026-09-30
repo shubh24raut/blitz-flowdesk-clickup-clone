@@ -34,14 +34,14 @@ import { arrayMove, cn } from "@/lib/utils";
 import { restrictToVerticalAxisModifier } from "@/components/tasks/dnd-modifiers";
 import { addStage, reorderStages, updateStage } from "@/store/actions/stages";
 import { getProjectStages, getStageTasks } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Stage } from "@/types";
 import { DeleteStageDialog } from "./delete-stage-dialog";
 
 const GRID = "grid grid-cols-[28px_minmax(0,1fr)_48px_40px] items-center gap-3 sm:grid-cols-[28px_minmax(0,1fr)_64px_64px_170px_44px]";
 
 export function StageManager({ projectId }: { projectId: string }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const stages = getProjectStages(state, projectId);
   const [adding, setAdding] = useState(false);
   const [toDelete, setToDelete] = useState<Stage | null>(null);

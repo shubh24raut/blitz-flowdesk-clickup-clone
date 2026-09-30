@@ -6,7 +6,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { ID } from "@/types";
 import { TaskDetail } from "./task-detail";
 
@@ -14,7 +14,7 @@ import { TaskDetail } from "./task-detail";
  * Right-side drawer on desktop (expandable), full-screen sheet on phones.
  */
 export function TaskDrawer({ taskId, onClose }: { taskId: ID | null; onClose: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const task = taskId ? state.tasks.find((t) => t.id === taskId) : undefined;
   const [expanded, setExpanded] = useState(false);
 

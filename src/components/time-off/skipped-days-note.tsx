@@ -2,7 +2,7 @@
 
 import { formatShort } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import { skippedDaysFor } from "@/store/selectors";
 import type { DateKey, ID } from "@/types";
 
@@ -21,7 +21,7 @@ export function SkippedDaysNote({
   end: DateKey;
   className?: string;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const { weekendDays, holidays } = skippedDaysFor(state, userId, { start, end });
   const parts = [
     weekendDays > 0 && `${weekendDays} weekend ${weekendDays === 1 ? "day" : "days"}`,

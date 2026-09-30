@@ -1,14 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { UIProvider } from "@/components/providers/ui-provider";
+import { UIProvider, useUI } from "@/components/providers/ui-provider";
 import { LogoMark } from "@/components/shared/logo";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAppState, useHydrated } from "@/store/hooks";
+import { syncActiveOrganization } from "@/store/actions/organizations";
+import { useHydrated, useRootState, useWorkspace } from "@/store/hooks";
+import { resolveActiveOrganizationId, safePathForWorkspace } from "@/store/selectors";
 
 function ShellSkeleton() {
   return (
@@ -35,20 +37,56 @@ function ShellSkeleton() {
   );
 }
 
-/** Authenticated shell. Local state is read only after hydration, so the guard waits for it. */
+/**
+ * Keeps the screen consistent with the active workspace: persists a re-resolved
+ * workspace, leaves pages about another workspace's project/client, and closes a
+ * task drawer whose task isn't in this workspace.
+ */
+function WorkspaceGuard() {
+  const root = useRootState();
+  const { tasks } = useWorkspace();
+  const { activeTaskId, closeTask } = useUI();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    syncActiveOrganization();
+  }, [root.activeOrganizationId, root.organizations, root.organizationMembers]);
+
+  useEffect(() => {
+    const target = safePathForWorkspace(root, pathname);
+    if (target !== pathname) router.replace(target);
+  }, [root, pathname, router]);
+
+  useEffect(() => {
+    if (activeTaskId && !tasks.some((t) => t.id === activeTaskId)) closeTask();
+  }, [activeTaskId, tasks, closeTask]);
+
+  return null;
+}
+
+/**
+ * Authenticated shell. Local state is read only after hydration, so the guard waits for it.
+ * Signed-in users without any workspace are sent to onboarding.
+ */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const hydrated = useHydrated();
-  const session = useAppState().session;
+  const root = useRootState();
+  const session = root.session;
+  const hasWorkspace = Boolean(session && resolveActiveOrganizationId(root));
 
   useEffect(() => {
-    if (hydrated && !session) router.replace("/login");
-  }, [hydrated, session, router]);
+    if (!hydrated) return;
+    if (!session) router.replace("/login");
+    else if (!hasWorkspace) router.replace("/onboarding");
+  }, [hydrated, session, hasWorkspace, router]);
 
-  if (!hydrated || !session) return <ShellSkeleton />;
+  if (!hydrated || !session || !hasWorkspace) return <ShellSkeleton />;
 
   return (
     <UIProvider>
+      <WorkspaceGuard />
       <div className="flex min-h-dvh">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">

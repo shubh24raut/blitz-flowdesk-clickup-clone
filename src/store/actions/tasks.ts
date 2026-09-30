@@ -1,9 +1,9 @@
 import { formatLong } from "@/lib/dates";
 import { clamp, uid } from "@/lib/utils";
-import { getProjectStages, getStageTasks, indexes } from "@/store/selectors";
+import { getProjectStages, getProjectTasks, getStageTasks, indexes } from "@/store/selectors";
 import { getState, setState } from "@/store/store";
-import type { AppState, ChecklistItem, ID, Priority, Task } from "@/types";
-import { actorId, now, replaceById, withActivity } from "./internal";
+import type { AppState, ChecklistItem, ID, Priority, Task, WorkspaceState } from "@/types";
+import { actorId, now, replaceById, withActivity, workspace } from "./internal";
 
 export interface TaskInput {
   projectId: ID;
@@ -18,18 +18,24 @@ export interface TaskInput {
 
 export function createTask(input: TaskInput): Task {
   const state = getState();
-  const stage = indexes(state).stages.get(input.stageId);
-  const projectTasks = state.tasks.filter((t) => t.projectId === input.projectId);
+  const ws = workspace();
+  const stage = indexes(ws).stages.get(input.stageId);
+  // The stage must belong to the task's project, and the project to the active workspace.
+  if (!ws.projects.some((p) => p.id === input.projectId) || stage?.projectId !== input.projectId) {
+    throw new Error("A task's stage must belong to its project in the active workspace.");
+  }
+  const members = new Set(ws.users.map((u) => u.id));
+  const projectTasks = getProjectTasks(ws, input.projectId);
   const task: Task = {
     id: uid("t"),
     number: projectTasks.reduce((max, t) => Math.max(max, t.number), 99) + 1,
     projectId: input.projectId,
     stageId: input.stageId,
-    order: getStageTasks(state, input.stageId).length,
+    order: getStageTasks(ws, input.stageId).length,
     title: input.title.trim(),
     description: input.description ?? "",
     priority: input.priority ?? "Medium",
-    assigneeIds: input.assigneeIds ?? [],
+    assigneeIds: (input.assigneeIds ?? []).filter((id) => members.has(id)),
     dueDate: input.dueDate ?? null,
     tags: input.tags ?? [],
     checklist: [],
@@ -49,7 +55,7 @@ export function createTask(input: TaskInput): Task {
 
 type TaskPatch = Partial<Pick<Task, "title" | "description" | "priority" | "assigneeIds" | "dueDate" | "tags">>;
 
-function names(state: AppState, ids: ID[]): string {
+function names(state: WorkspaceState, ids: ID[]): string {
   const users = indexes(state).users;
   return ids.map((id) => users.get(id)?.name ?? "Unknown").join(", ") || "Unassigned";
 }
@@ -68,8 +74,8 @@ export function updateTask(id: ID, patch: TaskPatch) {
       next = withActivity(next, {
         ...ctx,
         action: "changed the assignees of",
-        from: names(s, task.assigneeIds),
-        to: names(s, patch.assigneeIds),
+        from: names(workspace(), task.assigneeIds),
+        to: names(workspace(), patch.assigneeIds),
       });
     }
     if (patch.dueDate !== undefined && patch.dueDate !== task.dueDate) {
@@ -129,10 +135,11 @@ export function duplicateTask(id: ID): Task | null {
  * both affected stages. Returns the destination stage name when the stage changed.
  */
 export function moveTask(taskId: ID, toStageId: ID, toIndex: number): { stageChanged: boolean; stageName: string } {
-  const state = getState();
+  const state = workspace();
   const task = state.tasks.find((t) => t.id === taskId);
   const target = indexes(state).stages.get(toStageId);
-  if (!task || !target) return { stageChanged: false, stageName: "" };
+  // Never move a task into another project's (or workspace's) stage.
+  if (!task || !target || target.projectId !== task.projectId) return { stageChanged: false, stageName: "" };
   const fromStage = indexes(state).stages.get(task.stageId);
   const stageChanged = task.stageId !== toStageId;
 
@@ -173,7 +180,7 @@ export function moveTask(taskId: ID, toStageId: ID, toIndex: number): { stageCha
 
 /** Marks a task done by moving it to the first completed stage (or back to the first open one). */
 export function setTaskCompleted(taskId: ID, completed: boolean): string | null {
-  const state = getState();
+  const state = workspace();
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return null;
   const stages = getProjectStages(state, task.projectId);

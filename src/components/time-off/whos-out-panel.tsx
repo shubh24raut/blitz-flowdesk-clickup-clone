@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Card } from "@/components/ui/card";
 import { fromDateKey, toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import { approvedLeaveOn, indexes } from "@/store/selectors";
 import { LeaveRequestItem } from "./leave-request-item";
 import { useLeaveLink } from "./use-leave-link";
@@ -16,7 +16,7 @@ const HORIZON_DAYS = 14;
 
 /** Team availability: a two-week strip plus everyone's approved leave in the next 60 days. */
 export function WhosOutPanel() {
-  const state = useAppState();
+  const state = useWorkspace();
   const idx = indexes(state);
   const { openLeave } = useLeaveLink();
   const today = new Date();

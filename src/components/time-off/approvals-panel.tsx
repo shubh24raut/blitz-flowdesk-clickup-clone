@@ -5,7 +5,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { canReviewLeave } from "@/store/selectors";
 import type { LeaveRequest } from "@/types";
 import { LeaveRequestItem } from "./leave-request-item";
@@ -13,7 +13,7 @@ import { useLeaveLink } from "./use-leave-link";
 import { ReviewLeaveDialog, type ReviewDecision } from "./review-leave-dialog";
 
 export function ApprovalsPanel() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const { openLeave } = useLeaveLink();
   const [reviewing, setReviewing] = useState<{ request: LeaveRequest; decision: ReviewDecision } | null>(null);

@@ -17,13 +17,13 @@ import { PRIORITIES, PRIORITY_STYLES } from "@/constants";
 import { daysUntil, formatShort, toDate } from "@/lib/dates";
 import { firstName } from "@/lib/utils";
 import { getProjectStages, indexes, isTaskDone, projectProgress, taskPhase, type Phase } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 const OPEN_COLOR = "#5B5CF6";
 const DONE_COLOR = "#22C55E";
 
 export default function ReportsPage() {
-  const state = useAppState();
+  const state = useWorkspace();
   const { openTask } = useUI();
   const [projectId, setProjectId] = useState("all");
   const [weeks, setWeeks] = useState(8);

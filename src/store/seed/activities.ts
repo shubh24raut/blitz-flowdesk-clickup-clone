@@ -1,9 +1,10 @@
 import type { Activity, AppNotification } from "@/types";
+import type { Unscoped } from "./organizations";
 import { hoursAgo, minutesAgo } from "./time";
 
-type ActivitySeed = Omit<Activity, "id" | "clientId"> & { clientId?: string | null };
+type ActivitySeed = Omit<Unscoped<Activity>, "id" | "clientId"> & { clientId?: string | null };
 
-export function seedActivities(): Activity[] {
+export function seedActivities(): Unscoped<Activity>[] {
   const items: ActivitySeed[] = [
     { actorId: "u_mayuri", action: "moved", target: "API integration", from: "Design", to: "Development", projectId: "p_web", taskId: "t_api", createdAt: minutesAgo(10) },
     { actorId: "u_aditya", action: "commented on", target: "Design homepage (v2)", projectId: "p_web", taskId: "t_web_6", createdAt: hoursAgo(2) },
@@ -21,7 +22,7 @@ export function seedActivities(): Activity[] {
   return items.map((item, index) => ({ clientId: null, ...item, id: `ac_seed_${index + 1}` }));
 }
 
-export function seedNotifications(): AppNotification[] {
+export function seedNotifications(): Unscoped<AppNotification>[] {
   return [
     { id: "n_1", actorId: "u_priya", message: "mentioned you in “Design homepage (v2)”", href: "/projects/p_web/tasks?task=t_web_6", read: false, createdAt: hoursAgo(20) },
     { id: "n_2", actorId: "u_neha", message: "assigned you to “Kickoff meeting”", href: "/projects/p_mobile/tasks?task=t_mobile_3", read: false, createdAt: hoursAgo(3) },

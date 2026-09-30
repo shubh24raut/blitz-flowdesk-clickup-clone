@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { useAppState, useHydrated } from "@/store/hooks";
+import { useHydrated, useRootState } from "@/store/hooks";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const hydrated = useHydrated();
-  const session = useAppState().session;
+  const session = useRootState().session;
 
   useEffect(() => {
     if (hydrated && session) router.replace("/dashboard");

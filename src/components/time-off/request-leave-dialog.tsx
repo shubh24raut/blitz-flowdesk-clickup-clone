@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { formatDays, fromDateKey, isDateKey } from "@/lib/time-off";
 import { wait } from "@/lib/utils";
 import { requestLeave } from "@/store/actions/time-off";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { holidaysFor, leaveBalances, leaveDaysFor } from "@/store/selectors";
 import { leaveRequestSchema, type LeaveRequestInput } from "@/validators/leave.validator";
 import { SkippedDaysNote } from "./skipped-days-note";
@@ -38,7 +38,7 @@ export function RequestLeaveDialog({
 }
 
 function RequestForm({ defaultDate, onDone }: { defaultDate?: string; onDone: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const {
     control,

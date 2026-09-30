@@ -14,7 +14,7 @@ import { HOLIDAY_KIND_LABELS, HOLIDAY_KIND_STYLES } from "@/constants";
 import { fromDateKey, toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { deleteHoliday } from "@/store/actions/time-off";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import { holidayCalendarIdFor, isTimeOffAdmin } from "@/store/selectors";
 import type { Holiday } from "@/types";
 import { HolidayFormDialog } from "./holiday-form-dialog";
@@ -25,7 +25,7 @@ const MINE = "mine";
 const COMPANY = "company";
 
 export function HolidaysPanel() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const canManage = isTimeOffAdmin(me);
   const thisYear = new Date().getFullYear();

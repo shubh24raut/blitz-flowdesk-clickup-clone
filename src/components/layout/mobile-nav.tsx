@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useUI } from "@/components/providers/ui-provider";
 import { Dialog, DialogBody, DialogContent } from "@/components/ui/dialog";
+import { CurrentWorkspaceButton, WorkspaceSheet } from "@/components/workspace/workspace-sheet";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { useLogout } from "@/hooks/use-logout";
@@ -17,6 +18,7 @@ const LABELS: Record<string, string> = { "/dashboard": "Home" };
 export function MobileNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [workspacesOpen, setWorkspacesOpen] = useState(false);
   const logout = useLogout();
   const { openCreateTask } = useUI();
   const primary = NAV_ITEMS.filter((i) => PRIMARY.includes(i.href));
@@ -72,7 +74,13 @@ export function MobileNav() {
       <Dialog open={moreOpen} onOpenChange={setMoreOpen}>
         <DialogContent title="More" size="sm">
           <DialogBody className="pb-8">
-            <ul className="grid grid-cols-2 gap-2">
+            <CurrentWorkspaceButton
+              onClick={() => {
+                setMoreOpen(false);
+                setWorkspacesOpen(true);
+              }}
+            />
+            <ul className="mt-3 grid grid-cols-2 gap-2">
               {secondary.map((item) => (
                 <li key={item.href}>
                   <Link
@@ -104,6 +112,7 @@ export function MobileNav() {
           </DialogBody>
         </DialogContent>
       </Dialog>
+      <WorkspaceSheet open={workspacesOpen} onOpenChange={setWorkspacesOpen} />
     </>
   );
 }

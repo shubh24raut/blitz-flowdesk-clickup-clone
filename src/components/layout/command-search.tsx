@@ -8,7 +8,7 @@ import { useUI } from "@/components/providers/ui-provider";
 import { UserAvatar } from "@/components/shared/avatar";
 import { cn } from "@/lib/utils";
 import { indexes, taskKey } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import { NAV_ITEMS } from "./nav-items";
 
 interface Result {
@@ -38,7 +38,7 @@ export function CommandSearch({ open, onOpenChange }: { open: boolean; onOpenCha
 }
 
 function SearchBody({ onClose }: { onClose: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const router = useRouter();
   const { openTask } = useUI();
   const [query, setQuery] = useState("");

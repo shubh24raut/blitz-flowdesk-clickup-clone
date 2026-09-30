@@ -26,7 +26,7 @@ export function eachDateKey(start: DateKey, end: DateKey): DateKey[] {
 }
 
 /** Holidays that give the day off. Optional holidays are informational only. */
-export function daysOffFrom(holidays: Holiday[]): Set<DateKey> {
+export function daysOffFrom(holidays: Array<Pick<Holiday, "date" | "kind">>): Set<DateKey> {
   return new Set(holidays.filter((h) => h.kind !== "optional").map((h) => h.date));
 }
 

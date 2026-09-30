@@ -32,14 +32,14 @@ import { toDate } from "@/lib/dates";
 import { toDateKey } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
 import { getUsers, indexes } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { Task } from "@/types";
 
 type View = "month" | "week" | "day";
 const WEEK_OPTS = { weekStartsOn: 0 } as const;
 
 export default function CalendarPage() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const { openCreateTask } = useUI();
   const [view, setView] = useState<View>("month");
@@ -287,7 +287,7 @@ function DayAgenda({
   onAdd: () => void;
   className?: string;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const { openTask } = useUI();
   const idx = indexes(state);
   return (

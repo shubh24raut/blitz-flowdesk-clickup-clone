@@ -20,12 +20,12 @@ import { formatLong } from "@/lib/dates";
 import { pluralize } from "@/lib/utils";
 import { addClientContact, deleteClient, removeClientContact, updateClient } from "@/store/actions/clients";
 import { clientProjects, getUsers, projectProgress } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Client } from "@/types";
 
 export default function ClientDetailPage() {
   const { clientId } = useParams<{ clientId: string }>();
-  const state = useAppState();
+  const state = useWorkspace();
   const client = state.clients.find((c) => c.id === clientId);
 
   if (!client) {
@@ -46,7 +46,7 @@ export default function ClientDetailPage() {
 }
 
 function ClientDetail({ client }: { client: Client }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);

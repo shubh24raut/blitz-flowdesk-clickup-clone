@@ -8,7 +8,7 @@ import { LEAVE_STATUS_STYLES } from "@/constants";
 import { formatShort } from "@/lib/dates";
 import { formatDays } from "@/lib/time-off";
 import { cn } from "@/lib/utils";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import { indexes } from "@/store/selectors";
 import type { LeaveRequest } from "@/types";
 import { SkippedDaysNote } from "./skipped-days-note";
@@ -35,7 +35,7 @@ export function LeaveRequestItem({
   actions?: ReactNode;
   className?: string;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const idx = indexes(state);
   const user = idx.users.get(request.userId);
   const type = state.leaveTypes.find((t) => t.id === request.typeId);

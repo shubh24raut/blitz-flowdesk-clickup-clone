@@ -13,11 +13,11 @@ import { Progress } from "@/components/ui/progress";
 import { daysUntil, formatLong } from "@/lib/dates";
 import { pluralize } from "@/lib/utils";
 import { getProjectStages, getProjectTasks, getUsers, indexes, isTaskDone, projectProgress } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 export default function ProjectOverviewPage() {
   const project = useProject();
-  const state = useAppState();
+  const state = useWorkspace();
   const { openTask } = useUI();
   const stages = getProjectStages(state, project.id);
   const tasks = getProjectTasks(state, project.id);

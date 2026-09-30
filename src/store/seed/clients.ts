@@ -1,7 +1,8 @@
 import type { Client } from "@/types";
+import type { Unscoped } from "./organizations";
 import { daysFromNow } from "./time";
 
-export function seedClients(): Client[] {
+export function seedClients(): Unscoped<Client>[] {
   return [
     {
       id: "c_acme",

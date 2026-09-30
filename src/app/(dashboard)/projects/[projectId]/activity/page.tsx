@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getUsers } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 const KINDS = [
   { id: "all", label: "All", match: () => true },
@@ -19,7 +19,7 @@ const KINDS = [
 
 export default function ProjectActivityPage() {
   const project = useProject();
-  const state = useAppState();
+  const state = useWorkspace();
   const [kind, setKind] = useState<(typeof KINDS)[number]["id"]>("all");
   const [member, setMember] = useState("all");
   const members = getUsers(state, project.memberIds);

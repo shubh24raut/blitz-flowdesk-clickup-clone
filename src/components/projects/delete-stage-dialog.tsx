@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { pluralize } from "@/lib/utils";
 import { deleteStage } from "@/store/actions/stages";
 import { getProjectStages, getStageTasks } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Stage } from "@/types";
 
 export function DeleteStageDialog({ stage, onOpenChange }: { stage: Stage | null; onOpenChange: (open: boolean) => void }) {
@@ -18,7 +18,7 @@ export function DeleteStageDialog({ stage, onOpenChange }: { stage: Stage | null
 }
 
 function DeleteStageDialogInner({ stage, onOpenChange }: { stage: Stage; onOpenChange: (open: boolean) => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const others = getProjectStages(state, stage.projectId).filter((s) => s.id !== stage.id);
   const taskCount = getStageTasks(state, stage.id).length;
   // Default to the neighbouring stage so tasks stay roughly where they were in the flow.

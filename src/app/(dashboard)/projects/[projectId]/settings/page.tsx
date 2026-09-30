@@ -17,11 +17,11 @@ import { Input } from "@/components/ui/input";
 import { formatLong } from "@/lib/dates";
 import { archiveProject, deleteProject, setProjectMembers, updateProject } from "@/store/actions/projects";
 import { getProjectTasks, getUsers, indexes } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 
 export default function ProjectSettingsPage() {
   const project = useProject();
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const router = useRouter();
   const [editing, setEditing] = useState(false);

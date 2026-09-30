@@ -1,35 +1,26 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, Plus, Settings, Star, UserPlus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LetterTile } from "@/components/shared/avatar";
 import { Logo, LogoMark } from "@/components/shared/logo";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { cn, initials } from "@/lib/utils";
-import { useAppState } from "@/store/hooks";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
+import { cn } from "@/lib/utils";
+import { useWorkspace } from "@/store/hooks";
 import { useUI } from "@/components/providers/ui-provider";
 import { NAV_ITEMS, isActive } from "./nav-items";
-import { useLogout } from "@/hooks/use-logout";
 
 /**
  * Desktop sidebar. Icon-only between md and lg (tablet), full width from lg.
+ * The workspace switcher sits under the logo; everything below it is scoped to that workspace.
  */
 export function Sidebar() {
   const pathname = usePathname();
-  const state = useAppState();
-  const logout = useLogout();
+  const state = useWorkspace();
   const { openCreateProject } = useUI();
   const starred = state.projects.filter((p) => p.starred && p.status !== "Archived");
-  const memberCount = state.users.filter((u) => u.status !== "Inactive").length;
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-[76px] shrink-0 flex-col border-r border-border bg-sidebar md:flex lg:w-64">
@@ -38,6 +29,10 @@ export function Sidebar() {
           <Logo className="hidden lg:inline-flex" />
           <LogoMark className="lg:hidden" />
         </Link>
+      </div>
+
+      <div className="px-3 pb-1 lg:px-4">
+        <WorkspaceSwitcher />
       </div>
 
       <nav aria-label="Main" className="scrollbar-thin flex-1 overflow-y-auto px-3 py-3 lg:px-4">
@@ -107,43 +102,6 @@ export function Sidebar() {
           </ul>
         </div>
       </nav>
-
-      <div className="p-3 lg:p-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card p-2 text-left shadow-card transition hover:bg-muted lg:justify-start lg:p-2.5"
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-xs font-bold text-white">
-                {initials(state.organization.name)}
-              </span>
-              <span className="hidden min-w-0 flex-1 lg:block">
-                <span className="block truncate text-sm font-semibold">{state.organization.name}</span>
-                <span className="block text-xs text-muted-foreground">{memberCount} members</span>
-              </span>
-              <ChevronsUpDown className="hidden size-4 text-muted-foreground lg:block" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-60">
-            <DropdownMenuLabel>{state.organization.plan} workspace</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link href="/settings?tab=organization">
-                <Settings /> Workspace settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/team?invite=1">
-                <UserPlus /> Invite members
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onSelect={logout}>
-              <LogOut /> Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
     </aside>
   );
 }

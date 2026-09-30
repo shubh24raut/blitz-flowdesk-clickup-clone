@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { LogoMark } from "@/components/shared/logo";
-import { useAppState, useHydrated } from "@/store/hooks";
+import { useHydrated, useRootState } from "@/store/hooks";
 
 export default function IndexPage() {
   const router = useRouter();
   const hydrated = useHydrated();
-  const session = useAppState().session;
+  const session = useRootState().session;
 
   useEffect(() => {
     if (hydrated) router.replace(session ? "/dashboard" : "/login");

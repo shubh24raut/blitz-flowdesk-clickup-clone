@@ -23,7 +23,7 @@ import { formatLong, formatShort, toDate } from "@/lib/dates";
 import { cn, firstName } from "@/lib/utils";
 import { setTaskCompleted } from "@/store/actions/tasks";
 import { indexes, isTaskDone, projectProgress, taskPhase, type Phase } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 
 type Range = "week" | "month" | "all";
 const RANGE_LABEL: Record<Range, string> = { week: "this week", month: "this month", all: "all time" };
@@ -35,7 +35,7 @@ function greeting(hour: number) {
 }
 
 export default function DashboardPage() {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const { openTask, openCreateTask, openCreateProject } = useUI();
   const [range, setRange] = useState<Range>("week");
@@ -245,6 +245,19 @@ export default function DashboardPage() {
           </Link>
         </CardHeader>
         <CardContent className="pt-3">
+          {data.activeProjects.length === 0 && (
+            <EmptyState
+              compact
+              icon={FolderKanban}
+              title="No projects yet"
+              description="Create your first project to start organizing your work."
+              action={
+                <Button size="sm" onClick={openCreateProject}>
+                  <Plus /> Create project
+                </Button>
+              }
+            />
+          )}
           <ul className="grid gap-x-8 gap-y-4 md:grid-cols-2">
             {data.activeProjects.map((p) => {
               const progress = projectProgress(state, p.id);

@@ -1,8 +1,16 @@
 import { countLeaveDays, daysOffFrom, eachDateKey, fromDateKey, rangesOverlap } from "@/lib/time-off";
-import type { AppState, Client, DateKey, Holiday, ID, LeaveRequest, LeaveType, Project, Stage, Task, User } from "@/types";
+import { isAdminRole } from "@/lib/organizations";
+import type { Client, DateKey, Holiday, ID, LeaveRequest, LeaveType, Member, Project, Stage, Task, WorkspaceState } from "@/types";
+
+export * from "./organization";
+
+/*
+ * Selectors below take a `WorkspaceState` (see `selectWorkspace`), so everything
+ * they return is already limited to the active organization.
+ */
 
 interface Indexes {
-  users: Map<ID, User>;
+  users: Map<ID, Member>;
   clients: Map<ID, Client>;
   projects: Map<ID, Project>;
   stages: Map<ID, Stage>;
@@ -13,7 +21,7 @@ interface Indexes {
   attachmentCount: Map<ID, number>;
 }
 
-const cache = new WeakMap<AppState, Indexes>();
+const cache = new WeakMap<WorkspaceState, Indexes>();
 
 function group<T>(items: T[], key: (item: T) => ID): Map<ID, T[]> {
   const map = new Map<ID, T[]>();
@@ -36,7 +44,7 @@ function count<T>(items: T[], key: (item: T) => ID | null): Map<ID, number> {
 }
 
 /** Lookup tables derived from state, memoised per state snapshot. */
-export function indexes(state: AppState): Indexes {
+export function indexes(state: WorkspaceState): Indexes {
   const hit = cache.get(state);
   if (hit) return hit;
   const stagesByProject = group(state.stages, (s) => s.projectId);
@@ -58,28 +66,28 @@ export function indexes(state: AppState): Indexes {
   return built;
 }
 
-export function getProjectStages(state: AppState, projectId: ID): Stage[] {
+export function getProjectStages(state: WorkspaceState, projectId: ID): Stage[] {
   return indexes(state).stagesByProject.get(projectId) ?? [];
 }
 
-export function getStageTasks(state: AppState, stageId: ID): Task[] {
+export function getStageTasks(state: WorkspaceState, stageId: ID): Task[] {
   return indexes(state).tasksByStage.get(stageId) ?? [];
 }
 
-export function getProjectTasks(state: AppState, projectId: ID): Task[] {
+export function getProjectTasks(state: WorkspaceState, projectId: ID): Task[] {
   return indexes(state).tasksByProject.get(projectId) ?? [];
 }
 
-export function isTaskDone(state: AppState, task: Task): boolean {
+export function isTaskDone(state: WorkspaceState, task: Task): boolean {
   return indexes(state).stages.get(task.stageId)?.isCompleted ?? false;
 }
 
-export function taskKey(state: AppState, task: Task): string {
+export function taskKey(state: WorkspaceState, task: Task): string {
   const project = indexes(state).projects.get(task.projectId);
   return `${project?.key ?? "T"}-${task.number}`;
 }
 
-export function projectProgress(state: AppState, projectId: ID) {
+export function projectProgress(state: WorkspaceState, projectId: ID) {
   const tasks = getProjectTasks(state, projectId);
   const done = tasks.filter((t) => isTaskDone(state, t)).length;
   return {
@@ -89,19 +97,19 @@ export function projectProgress(state: AppState, projectId: ID) {
   };
 }
 
-export function getUsers(state: AppState, ids: ID[]): User[] {
+export function getUsers(state: WorkspaceState, ids: ID[]): Member[] {
   const map = indexes(state).users;
-  return ids.map((id) => map.get(id)).filter((u): u is User => Boolean(u));
+  return ids.map((id) => map.get(id)).filter((u): u is Member => Boolean(u));
 }
 
-export function clientProjects(state: AppState, clientId: ID): Project[] {
+export function clientProjects(state: WorkspaceState, clientId: ID): Project[] {
   return state.projects.filter((p) => p.clientId === clientId);
 }
 
 /** Buckets a task into a generic phase so dashboards work across custom workflows. */
 export type Phase = "To Do" | "In Progress" | "Review" | "Done";
 
-export function taskPhase(state: AppState, task: Task): Phase {
+export function taskPhase(state: WorkspaceState, task: Task): Phase {
   const stage = indexes(state).stages.get(task.stageId);
   if (!stage) return "To Do";
   if (stage.isCompleted) return "Done";
@@ -112,20 +120,20 @@ export function taskPhase(state: AppState, task: Task): Phase {
 
 /* ---------------------------------- Time off --------------------------------- */
 
-export function holidayCalendarIdFor(state: AppState, userId: ID): ID | null {
+export function holidayCalendarIdFor(state: WorkspaceState, userId: ID): ID | null {
   const user = indexes(state).users.get(userId);
   return user?.holidayCalendarId ?? state.organization.defaultHolidayCalendarId;
 }
 
 /** Company-wide holidays plus the member's own holiday calendar, sorted by date. */
-export function holidaysFor(state: AppState, userId: ID): Holiday[] {
+export function holidaysFor(state: WorkspaceState, userId: ID): Holiday[] {
   const calendarId = holidayCalendarIdFor(state, userId);
   return state.holidays
     .filter((h) => h.calendarId === null || h.calendarId === calendarId)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function leaveDaysFor(state: AppState, userId: ID, range: { start: DateKey; end: DateKey; halfDay: boolean }): number {
+export function leaveDaysFor(state: WorkspaceState, userId: ID, range: { start: DateKey; end: DateKey; halfDay: boolean }): number {
   return countLeaveDays({
     ...range,
     workingDays: state.organization.workingDays,
@@ -134,7 +142,7 @@ export function leaveDaysFor(state: AppState, userId: ID, range: { start: DateKe
 }
 
 /** What a date range skips: non-working weekdays, and holidays that fall on working days. */
-export function skippedDaysFor(state: AppState, userId: ID, range: { start: DateKey; end: DateKey }): { weekendDays: number; holidays: Holiday[] } {
+export function skippedDaysFor(state: WorkspaceState, userId: ID, range: { start: DateKey; end: DateKey }): { weekendDays: number; holidays: Holiday[] } {
   const { workingDays } = state.organization;
   const offByDate = new Map(holidaysFor(state, userId).filter((h) => h.kind !== "optional").map((h) => [h.date, h]));
   let weekendDays = 0;
@@ -155,7 +163,7 @@ export interface LeaveBalance {
 }
 
 /** Fixed yearly allowance: requests count toward the year they start in. */
-export function leaveBalances(state: AppState, userId: ID, year: number): LeaveBalance[] {
+export function leaveBalances(state: WorkspaceState, userId: ID, year: number): LeaveBalance[] {
   const prefix = String(year);
   const mine = state.leaveRequests.filter((r) => r.userId === userId && r.startDate.startsWith(prefix));
   return state.leaveTypes.map((type) => {
@@ -168,22 +176,23 @@ export function leaveBalances(state: AppState, userId: ID, year: number): LeaveB
 }
 
 /** Approved leave covering a date. */
-export function approvedLeaveOn(state: AppState, date: DateKey): LeaveRequest[] {
+export function approvedLeaveOn(state: WorkspaceState, date: DateKey): LeaveRequest[] {
   return state.leaveRequests.filter((r) => r.status === "Approved" && r.startDate <= date && date <= r.endDate);
 }
 
 /** Pending or approved requests of a member that clash with a date range. */
-export function overlappingLeave(state: AppState, userId: ID, range: { startDate: DateKey; endDate: DateKey }, ignoreId?: ID): LeaveRequest[] {
+export function overlappingLeave(state: WorkspaceState, userId: ID, range: { startDate: DateKey; endDate: DateKey }, ignoreId?: ID): LeaveRequest[] {
   return state.leaveRequests.filter(
     (r) => r.userId === userId && r.id !== ignoreId && (r.status === "Pending" || r.status === "Approved") && rangesOverlap(r, range),
   );
 }
 
-export function isTimeOffAdmin(user: User): boolean {
-  return user.role === "Owner" || user.role === "Admin";
+/** `member.role` is the membership role in the active organization, never a global one. */
+export function isTimeOffAdmin(member: Pick<Member, "role">): boolean {
+  return isAdminRole(member.role);
 }
 
 /** Owners and admins review requests — never their own. */
-export function canReviewLeave(reviewer: User, request: LeaveRequest): boolean {
+export function canReviewLeave(reviewer: Pick<Member, "id" | "role">, request: LeaveRequest): boolean {
   return isTimeOffAdmin(reviewer) && reviewer.id !== request.userId && request.status === "Pending";
 }

@@ -7,12 +7,12 @@ import type { ReactNode } from "react";
 import { ProjectHeader } from "@/components/projects/project-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 
 export default function ProjectLayout({ children }: { children: ReactNode }) {
   const { projectId } = useParams<{ projectId: string }>();
   const segment = useSelectedLayoutSegment() ?? "overview";
-  const project = useAppState().projects.find((p) => p.id === projectId);
+  const project = useWorkspace().projects.find((p) => p.id === projectId);
 
   if (!project) {
     return (

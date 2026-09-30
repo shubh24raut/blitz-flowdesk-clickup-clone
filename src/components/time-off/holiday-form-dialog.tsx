@@ -11,7 +11,7 @@ import { Select } from "@/components/ui/select";
 import { HOLIDAY_KIND_LABELS } from "@/constants";
 import { wait } from "@/lib/utils";
 import { addHoliday, updateHoliday } from "@/store/actions/time-off";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Holiday, HolidayKind } from "@/types";
 import { holidaySchema, type HolidayInput } from "@/validators/holiday.validator";
 
@@ -38,7 +38,7 @@ export function HolidayFormDialog({
 }
 
 function HolidayForm({ holiday, onDone }: { holiday: Holiday | null; onDone: () => void }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const {
     control,
     register,

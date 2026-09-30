@@ -1,12 +1,13 @@
 import { addDays } from "date-fns";
 import { countLeaveDays, daysOffFrom, isWorkingDay, toDateKey } from "@/lib/time-off";
 import type { DateKey, Holiday, HolidayCalendar, LeaveRequest, LeaveStatus, LeaveType } from "@/types";
+import type { Unscoped } from "./organizations";
 import { daysFromNow, hoursAgo } from "./time";
 
 export const SEED_WORKING_DAYS = [1, 2, 3, 4, 5];
 export const SEED_HOLIDAY_CALENDAR_ID = "hc_india";
 
-export function seedHolidayCalendars(): HolidayCalendar[] {
+export function seedHolidayCalendars(): Unscoped<HolidayCalendar>[] {
   return [{ id: SEED_HOLIDAY_CALENDAR_ID, name: "India — Maharashtra", countryCode: "IN", regionCode: "MH" }];
 }
 
@@ -28,10 +29,10 @@ function weekdayKey(offset: number): DateKey {
   return toDateKey(day);
 }
 
-export function seedHolidays(): Holiday[] {
+export function seedHolidays(): Unscoped<Holiday>[] {
   const year = new Date().getFullYear();
   const national = [year, year + 1].flatMap((y) =>
-    FIXED_INDIA_HOLIDAYS.map(([m, d, name]): Holiday => {
+    FIXED_INDIA_HOLIDAYS.map(([m, d, name]): Unscoped<Holiday> => {
       const date = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       return { id: `hol_${date}`, calendarId: SEED_HOLIDAY_CALENDAR_ID, name, date, kind: "public" };
     }),
@@ -43,7 +44,7 @@ export function seedHolidays(): Holiday[] {
   ];
 }
 
-export function seedLeaveTypes(): LeaveType[] {
+export function seedLeaveTypes(): Unscoped<LeaveType>[] {
   return [
     { id: "lt_casual", name: "Casual leave", color: "#5B5CF6", allowance: 12, paid: true, requiresApproval: true },
     { id: "lt_sick", name: "Sick leave", color: "#F59E0B", allowance: 8, paid: true, requiresApproval: false },
@@ -65,7 +66,7 @@ function workingSpan(offset: number, count: number, daysOff: Set<DateKey>): { st
   return { startDate, endDate: dayKey(cursor) };
 }
 
-export function seedLeaveRequests(): LeaveRequest[] {
+export function seedLeaveRequests(): Unscoped<LeaveRequest>[] {
   const daysOff = daysOffFrom(seedHolidays());
   const make = (
     id: string,
@@ -76,7 +77,7 @@ export function seedLeaveRequests(): LeaveRequest[] {
     status: LeaveStatus,
     reason: string,
     extra: Partial<LeaveRequest> = {},
-  ): LeaveRequest => {
+  ): Unscoped<LeaveRequest> => {
     const span = workingSpan(offset, count, daysOff);
     const halfDay = extra.halfDay ?? false;
     const reviewed = status === "Approved" || status === "Rejected";

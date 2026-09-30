@@ -22,7 +22,7 @@ import { formatRelative } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { deleteComment, toggleReaction, updateComment } from "@/store/actions/comments";
 import { indexes } from "@/store/selectors";
-import { useAppState, useCurrentUser } from "@/store/hooks";
+import { useWorkspace, useCurrentUser } from "@/store/hooks";
 import type { Attachment, Comment, ID } from "@/types";
 import { CommentComposer, EMOJIS } from "./comment-composer";
 
@@ -36,7 +36,7 @@ interface ThreadProps {
 }
 
 export function CommentThread({ projectId, taskId, showComposer = true, composerClassName, emptyHint }: ThreadProps) {
-  const state = useAppState();
+  const state = useWorkspace();
   const [preview, setPreview] = useState<Attachment | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Comment | null>(null);
 
@@ -117,7 +117,7 @@ function CommentItem({
   onDelete: (c: Comment) => void;
   isReply?: boolean;
 }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const me = useCurrentUser();
   const author = indexes(state).users.get(comment.authorId);
   const attachments = state.attachments.filter((a) => a.commentId === comment.id);

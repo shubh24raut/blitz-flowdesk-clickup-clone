@@ -10,7 +10,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn, withAlpha } from "@/lib/utils";
 import { toggleProjectStar } from "@/store/actions/projects";
 import { getUsers, indexes } from "@/store/selectors";
-import { useAppState } from "@/store/hooks";
+import { useWorkspace } from "@/store/hooks";
 import type { Project } from "@/types";
 import { ProjectFormDialog } from "./project-form-dialog";
 
@@ -25,7 +25,7 @@ export const PROJECT_TABS = [
 ] as const;
 
 export function ProjectHeader({ project, activeTab }: { project: Project; activeTab: string }) {
-  const state = useAppState();
+  const state = useWorkspace();
   const [editing, setEditing] = useState(false);
   const client = project.clientId ? indexes(state).clients.get(project.clientId) : undefined;
   const members = getUsers(state, project.memberIds);
