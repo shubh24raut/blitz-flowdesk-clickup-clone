@@ -1,6 +1,7 @@
 # FlowDesk — Project Context
 
 > Paste this whole document into a new conversation to give an assistant the full picture.
+> The public landing page has its own context doc: `docs/LANDING_PAGE_CONTEXT.md`.
 > Snapshot date: 30 Sep 2026.
 
 ## 1. What FlowDesk is
