@@ -43,9 +43,9 @@ test("request a day off and see it pending", async ({ page }) => {
 test("an owner approves a teammate's request", async ({ page }) => {
   await page.goto("/time-off?tab=approvals");
   const row = page.getByRole("listitem").filter({ hasText: "Mayuri Shah" });
-  await row.getByRole("button", { name: "Approve" }).click();
+  await row.getByRole("button", { name: "Approve", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Approve leave" });
-  await dialog.getByRole("button", { name: "Approve" }).click();
+  await dialog.getByRole("button", { name: "Approve", exact: true }).click();
 
   await expect(page.getByText("Mayuri Shah's leave approved")).toBeVisible();
   const decisions = page.locator("section", { has: page.getByRole("heading", { name: "Recent decisions" }) });
@@ -59,7 +59,7 @@ test("an owner can't approve their own request", async ({ page }) => {
   await page.getByRole("tab", { name: /Approvals/ }).click();
   const own = page.getByRole("listitem").filter({ hasText: "Sachin Darde" });
   await expect(own.getByText("Needs another admin")).toBeVisible();
-  await expect(own.getByRole("button", { name: "Approve" })).toHaveCount(0);
+  await expect(own.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
 });
 
 test("reviewers see which days were not counted", async ({ page }) => {
@@ -93,6 +93,27 @@ test("reviewers see which days were not counted", async ({ page }) => {
   const row = waiting.getByRole("listitem").filter({ hasText: "Sachin Darde" });
   await expect(row.getByText("· 2 days")).toBeVisible();
   await expect(row.getByText("Not counted: 2 weekend days")).toBeVisible();
+});
+
+test("clicking a request opens its details, and approving from there works", async ({ page }) => {
+  await page.goto("/time-off?tab=approvals");
+  const waiting = page.locator("section", { has: page.getByRole("heading", { name: "Waiting for approval" }) });
+  await waiting.getByRole("button", { name: /Rahul Mehta/ }).click();
+
+  await expect(page).toHaveURL(/leave=lr_rahul/);
+  const drawer = page.getByRole("dialog", { name: "Rahul Mehta's leave" });
+  await expect(drawer.getByText("Earned leave balance")).toBeVisible();
+  await expect(drawer.getByRole("heading", { name: "Day by day" })).toBeVisible();
+  await expect(drawer.getByText("Requested by Rahul Mehta")).toBeVisible();
+
+  await drawer.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("dialog", { name: "Approve leave" }).getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(drawer.getByText("Approved by Sachin Darde")).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
+
+  // The link survives a reload.
+  await page.reload();
+  await expect(page.getByRole("dialog", { name: "Rahul Mehta's leave" })).toBeVisible();
 });
 
 test("holidays tab lists national and company holidays", async ({ page }) => {

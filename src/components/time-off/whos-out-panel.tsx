@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useAppState } from "@/store/hooks";
 import { approvedLeaveOn, indexes } from "@/store/selectors";
 import { LeaveRequestItem } from "./leave-request-item";
+import { useLeaveLink } from "./use-leave-link";
 
 const HORIZON_DAYS = 14;
 
@@ -17,6 +18,7 @@ const HORIZON_DAYS = 14;
 export function WhosOutPanel() {
   const state = useAppState();
   const idx = indexes(state);
+  const { openLeave } = useLeaveLink();
   const today = new Date();
   const todayKey = toDateKey(today);
   const days = Array.from({ length: HORIZON_DAYS }, (_, i) => toDateKey(addDays(today, i)));
@@ -78,6 +80,7 @@ export function WhosOutPanel() {
               <LeaveRequestItem
                 key={r.id}
                 request={r}
+                onOpen={() => openLeave(r.id)}
                 showUser
                 showStatus={false}
                 actions={

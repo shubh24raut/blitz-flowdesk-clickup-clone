@@ -17,10 +17,12 @@ import { useAppState, useCurrentUser } from "@/store/hooks";
 import { holidaysFor, leaveBalances } from "@/store/selectors";
 import type { LeaveRequest } from "@/types";
 import { formatLeaveRange, LeaveRequestItem } from "./leave-request-item";
+import { useLeaveLink } from "./use-leave-link";
 
 export function MyLeavePanel({ onRequest }: { onRequest: () => void }) {
   const state = useAppState();
   const me = useCurrentUser();
+  const { openLeave } = useLeaveLink();
   const [cancelling, setCancelling] = useState<LeaveRequest | null>(null);
   const today = toDateKey(new Date());
   const year = new Date().getFullYear();
@@ -83,6 +85,7 @@ export function MyLeavePanel({ onRequest }: { onRequest: () => void }) {
                 <LeaveRequestItem
                   key={r.id}
                   request={r}
+                onOpen={() => openLeave(r.id)}
                   actions={
                     canCancelLeave(r, me.id) && (
                       <Button variant="ghost" size="sm" onClick={() => setCancelling(r)}>

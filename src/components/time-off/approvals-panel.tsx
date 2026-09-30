@@ -9,11 +9,13 @@ import { useAppState, useCurrentUser } from "@/store/hooks";
 import { canReviewLeave } from "@/store/selectors";
 import type { LeaveRequest } from "@/types";
 import { LeaveRequestItem } from "./leave-request-item";
+import { useLeaveLink } from "./use-leave-link";
 import { ReviewLeaveDialog, type ReviewDecision } from "./review-leave-dialog";
 
 export function ApprovalsPanel() {
   const state = useAppState();
   const me = useCurrentUser();
+  const { openLeave } = useLeaveLink();
   const [reviewing, setReviewing] = useState<{ request: LeaveRequest; decision: ReviewDecision } | null>(null);
 
   const pending = state.leaveRequests
@@ -37,6 +39,7 @@ export function ApprovalsPanel() {
               <LeaveRequestItem
                 key={r.id}
                 request={r}
+                onOpen={() => openLeave(r.id)}
                 showUser
                 showStatus={false}
                 actions={
@@ -64,7 +67,7 @@ export function ApprovalsPanel() {
           <h2 className="font-semibold">Recent decisions</h2>
           <ul className="mt-2 divide-y divide-border">
             {decided.map((r) => (
-              <LeaveRequestItem key={r.id} request={r} showUser />
+              <LeaveRequestItem key={r.id} request={r} onOpen={() => openLeave(r.id)} showUser />
             ))}
           </ul>
         </Card>

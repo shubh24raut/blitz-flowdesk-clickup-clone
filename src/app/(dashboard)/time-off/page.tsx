@@ -6,9 +6,11 @@ import { Suspense, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ApprovalsPanel } from "@/components/time-off/approvals-panel";
 import { HolidaysPanel } from "@/components/time-off/holidays-panel";
+import { LeaveDetailDrawer } from "@/components/time-off/leave-detail-drawer";
 import { MyLeavePanel } from "@/components/time-off/my-leave-panel";
 import { PoliciesPanel } from "@/components/time-off/policies-panel";
 import { RequestLeaveDialog } from "@/components/time-off/request-leave-dialog";
+import { useLeaveLink } from "@/components/time-off/use-leave-link";
 import { WhosOutPanel } from "@/components/time-off/whos-out-panel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +31,7 @@ function TimeOffContent() {
   const pathname = usePathname();
   const isAdmin = isTimeOffAdmin(me);
   const [requestState, setRequestOpen] = useState(false);
+  const { leaveId, closeLeave } = useLeaveLink();
 
   // `?request=1` or `?request=yyyy-MM-dd` (from the calendar) opens the request dialog.
   const requestParam = params.get("request");
@@ -91,6 +94,7 @@ function TimeOffContent() {
         </div>
       </Tabs>
 
+      <LeaveDetailDrawer requestId={leaveId} onClose={closeLeave} />
       <RequestLeaveDialog
         open={requestOpen}
         defaultDate={requestDate}
