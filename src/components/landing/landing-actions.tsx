@@ -1,31 +1,17 @@
 "use client";
 
-import { ArrowRight, Menu, Play, X } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
-import { DEMO_CREDENTIALS } from "@/constants";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
-import { signIn } from "@/store/actions/auth";
-import { useHydrated, useRootState } from "@/store/hooks";
 
-/** Signed-in state is only known in the browser; the server renders the signed-out variant. */
+/** Signed in = a real (Better Auth) session. The server renders the signed-out variant. */
 function useSignedIn(): boolean {
-  const hydrated = useHydrated();
-  const session = useRootState().session;
-  return hydrated && session !== null;
-}
-
-function useStartDemo() {
-  const router = useRouter();
-  return () => {
-    const user = signIn(DEMO_CREDENTIALS.email);
-    toast.success(`Signed in to the demo as ${user.name}`);
-    router.push("/dashboard");
-  };
+  const { data } = authClient.useSession();
+  return Boolean(data?.user);
 }
 
 const NAV = [
@@ -110,10 +96,9 @@ export function LandingHeader() {
   );
 }
 
-/** Primary calls to action: sign up and the one-click demo, or "Open FlowDesk" once signed in. */
+/** Primary calls to action: sign up / log in, or "Open FlowDesk" once signed in. */
 export function CtaButtons({ className, align = "start" }: { className?: string; align?: "start" | "center" }) {
   const signedIn = useSignedIn();
-  const startDemo = useStartDemo();
   return (
     <div className={cn("flex flex-col gap-3 sm:flex-row", align === "center" && "sm:justify-center", className)}>
       {signedIn ? (
@@ -129,8 +114,8 @@ export function CtaButtons({ className, align = "start" }: { className?: string;
               Get started free <ArrowRight />
             </Link>
           </Button>
-          <Button size="lg" variant="secondary" onClick={startDemo}>
-            <Play /> Try the live demo
+          <Button asChild size="lg" variant="secondary">
+            <Link href="/login">Log in</Link>
           </Button>
         </>
       )}

@@ -2,16 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { useHydrated, useRootState } from "@/store/hooks";
+import { useAuthSync } from "@/hooks/use-auth-sync";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const hydrated = useHydrated();
-  const session = useRootState().session;
+  const auth = useAuthSync();
 
+  // Already signed in (real session) → straight into the app.
   useEffect(() => {
-    if (hydrated && session) router.replace("/dashboard");
-  }, [hydrated, session, router]);
+    if (auth === "signed-in") router.replace("/dashboard");
+  }, [auth, router]);
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-lavender px-4 py-10">

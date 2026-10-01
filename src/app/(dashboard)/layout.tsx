@@ -9,7 +9,8 @@ import { UIProvider, useUI } from "@/components/providers/ui-provider";
 import { LogoMark } from "@/components/shared/logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { syncActiveOrganization } from "@/store/actions/organizations";
-import { useHydrated, useRootState, useWorkspace } from "@/store/hooks";
+import { useAuthSync } from "@/hooks/use-auth-sync";
+import { useRootState, useWorkspace } from "@/store/hooks";
 import { resolveActiveOrganizationId, safePathForWorkspace } from "@/store/selectors";
 
 function ShellSkeleton() {
@@ -66,23 +67,21 @@ function WorkspaceGuard() {
 }
 
 /**
- * Authenticated shell. Local state is read only after hydration, so the guard waits for it.
- * Signed-in users without any workspace are sent to onboarding.
+ * Authenticated shell. Requires a real (Better Auth) session — see `useAuthSync` —
+ * and sends signed-in users without any workspace to onboarding.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const hydrated = useHydrated();
+  const auth = useAuthSync();
   const root = useRootState();
-  const session = root.session;
-  const hasWorkspace = Boolean(session && resolveActiveOrganizationId(root));
+  const hasWorkspace = auth === "signed-in" && resolveActiveOrganizationId(root) !== null;
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (!session) router.replace("/login");
-    else if (!hasWorkspace) router.replace("/onboarding");
-  }, [hydrated, session, hasWorkspace, router]);
+    if (auth === "signed-out") router.replace("/login");
+    else if (auth === "signed-in" && !hasWorkspace) router.replace("/onboarding");
+  }, [auth, hasWorkspace, router]);
 
-  if (!hydrated || !session || !hasWorkspace) return <ShellSkeleton />;
+  if (!hasWorkspace) return <ShellSkeleton />;
 
   return (
     <UIProvider>

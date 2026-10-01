@@ -9,7 +9,7 @@
 `/` is FlowDesk's public marketing page. It explains what FlowDesk is to first-time visitors and sends them into the app through one of two paths:
 
 - **Get started** → `/signup` → `/onboarding` (create first workspace) → empty dashboard of the new workspace.
-- **Try the live demo** → signs in immediately as the demo user (Shubham Raut, Owner of *Dream Kasper LLP*) → `/dashboard`.
+- **Log in** → `/login` for existing accounts. (There is no demo login; every account is real.)
 
 Before this page existed, `/` only redirected to `/login` or `/dashboard`.
 
@@ -20,19 +20,18 @@ Before this page existed, `/` only redirected to `/login` or `/dashboard`.
 | `src/app/page.tsx` | Server Component | The page: `metadata`, all sections, copy arrays (`FEATURES`, `STEPS`), and the decorative spotlight visuals (`StagesVisual`, `WorkspacesVisual`, `TimeOffVisual`). |
 | `src/components/landing/landing-actions.tsx` | Client Component (`"use client"`) | `LandingHeader` (sticky header + mobile menu) and `CtaButtons` (hero CTAs). Both are auth-aware. |
 | `src/components/landing/product-preview.tsx` | Server Component | `ProductPreview`: a static, code-built mock of the app (window chrome, sidebar with workspace switcher, Kanban board). |
-| `e2e/smoke.spec.ts` | Playwright | "landing page is public and links into the app" and "the live demo button signs in to the demo workspace". |
+| `e2e/smoke.spec.ts` | Playwright | "landing page is public and links into the app". |
 
-Shared pieces it reuses: `Logo` (`components/shared/logo`), `Button` (`components/ui/button`), `DEMO_CREDENTIALS` (`constants`), `signIn` (`store/actions/auth`), `useHydrated` / `useRootState` (`store/hooks`), lucide-react icons.
+Shared pieces it reuses: `Logo` (`components/shared/logo`), `Button` (`components/ui/button`), `authClient` (`lib/auth-client`), lucide-react icons.
 
 ## 3. Rendering model
 
 - The page is a **Server Component**, so the copy and layout are in the initial HTML (good for SEO and first paint). `metadata` is exported from it (only allowed in Server Components in Next 16):
   - title (absolute): `FlowDesk — Project management for client work`
   - description: clients, projects, tasks, team and time off in one place; custom stages per project; a separate workspace for every company.
-- Only `LandingHeader` and `CtaButtons` are client code. They read the session from the mock store: `useSignedIn()` = `useHydrated() && useRootState().session !== null`. The server and the first client render show the **signed-out** variant; after hydration a signed-in visitor sees **Open FlowDesk** instead of the sign-up buttons.
+- Only `LandingHeader` and `CtaButtons` are client code. "Signed in" means a real Better Auth session (`authClient.useSession()`). The server and the first client render show the **signed-out** variant; once the session loads, a signed-in visitor sees **Open FlowDesk** instead of the sign-up buttons.
 - A signed-in visitor is **not** redirected away from `/`, so the page stays reachable from the logo.
-- The demo button calls `signIn(DEMO_CREDENTIALS.email)`, toasts "Signed in to the demo as …", then `router.push("/dashboard")`.
-- The page doesn't use the workspace data. The root layout still mounts `AppProviders` (theme sync, toaster, tooltips), so the landing page follows the **theme saved in the app's settings** (light / dark / system).
+- The page doesn't use workspace data. The preview and spotlight visuals use illustrative names (e.g. "Dream Kasper LLP") that are not real records. The root layout still mounts `AppProviders` (theme sync, toaster, tooltips), so the landing page follows the **theme saved in the app's settings** (light / dark / system).
 
 ## 4. Page structure (top → bottom)
 
@@ -45,8 +44,8 @@ Shared pieces it reuses: `Logo` (`components/shared/logo`), `Button` (`component
    - Pill: "Project management for client work".
    - H1: "Clients, projects and your team — **in one calm workspace.**" (second half in primary color).
    - Subtitle: every project gets its own workflow, a board teams enjoy, time off that plans around holidays, and each company in its own workspace.
-   - `CtaButtons`: **Get started free →** (`/signup`) and **Try the live demo** (button). Signed in: **Open FlowDesk →**.
-   - Note: "Free to try. The demo runs entirely in your browser — nothing to install."
+   - `CtaButtons`: **Get started free →** (`/signup`) and **Log in** (`/login`). Signed in: **Open FlowDesk →**.
+   - Note: "Free to get started — create your first workspace in under a minute."
    - `ProductPreview` below, over a soft gradient glow.
 3. **Features** (`#features`): heading "Everything client work needs, nothing it doesn't" and a 6-card grid:
    Clients → Projects → Tasks · Your workflow, per project · A board that keeps up · Rich task details · Time off built in · Dashboards & reports.
@@ -90,4 +89,4 @@ Shared pieces it reuses: `Logo` (`components/shared/logo`), `Button` (`component
 - FAQ, real testimonials or customer logos once there are real customers.
 - Open Graph / social share image and a sitemap / robots file.
 - Real screenshots or a short product video.
-- Once the backend exists: "Get started" goes through Better Auth sign-up, and the demo becomes a shared read-only sandbox instead of local mock data.
+- A public, read-only demo workspace (the old in-browser demo was removed to keep auth simple).

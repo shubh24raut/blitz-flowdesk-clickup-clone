@@ -1,5 +1,4 @@
-import { migrateState } from "@/store/migrations";
-import { createSeedState, CURRENT_USER_ID } from "@/store/seed";
+import { createInitialState, STATE_VERSION } from "@/store/initial-state";
 import type { AppState } from "@/types";
 
 /**
@@ -33,17 +32,18 @@ function sanitize(loaded: AppState): AppState {
 }
 
 function load(): AppState {
-  if (typeof window === "undefined") return createSeedState();
+  if (typeof window === "undefined") return createInitialState();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const migrated = migrateState(JSON.parse(raw));
-      if (migrated) return sanitize(migrated);
+      const saved = JSON.parse(raw) as AppState;
+      // Older saves (including the removed demo data) are discarded.
+      if (saved.version === STATE_VERSION) return sanitize(saved);
     }
   } catch {
-    // Corrupt or inaccessible storage — fall back to fresh seed data.
+    // Corrupt or inaccessible storage — start empty.
   }
-  return createSeedState();
+  return createInitialState();
 }
 
 function write() {
@@ -87,7 +87,7 @@ export function getState(): AppState {
 }
 
 export function getServerState(): AppState {
-  if (!serverState) serverState = createSeedState();
+  if (!serverState) serverState = createInitialState();
   return serverState;
 }
 
@@ -118,17 +118,6 @@ export function subscribe(listener: Listener) {
 function onStorage(event: StorageEvent) {
   if (event.key !== STORAGE_KEY) return;
   state = load();
-  emit();
-}
-
-/** Restores the original demo data but keeps the user signed in. */
-export function resetState() {
-  const seed = createSeedState();
-  const session = getState().session;
-  // Accounts that aren't in the fresh demo data (e.g. renamed or signed-up users) continue as the demo owner.
-  const userId = session && seed.users.some((u) => u.id === session.userId) ? session.userId : CURRENT_USER_ID;
-  state = { ...seed, session: session && { ...session, userId } };
-  persist();
   emit();
 }
 

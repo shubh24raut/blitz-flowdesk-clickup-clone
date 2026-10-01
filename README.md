@@ -11,17 +11,19 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 for the public landing page (hero, features, workspaces, how it works). **Try the live demo** signs straight into the demo workspace; **Get started** goes to sign-up → onboarding. Or sign in with:
+Open http://localhost:3000 for the public landing page, then **Get started** to create an account. There is no demo data and no demo login: every account is real.
 
-| Email | Password |
-| --- | --- |
-| `demo@flowdesk.com` | `password` |
+## How auth works
 
-**Real accounts:** sign up at `/signup` to create a real account (Better Auth, stored in Neon). Real accounts always need their real password, and "Forgot password" emails a reset link. The app itself still runs on mock data: a new real account has no workspaces, so it lands on the onboarding screen ("Create your first workspace").
+1. **Better Auth** handles identity. `src/lib/auth.ts` is the server config (Drizzle adapter on Neon, email + password, the organization plugin, email hooks); `src/lib/auth-client.ts` is the browser client; `/api/auth/*` is served by `src/app/api/auth/[...all]/route.ts`. Tables: `users`, `sessions`, `accounts`, `verifications`, `organizations`, `organization_members`, `invitations`.
+2. **Sign up / sign in** (`src/app/(auth)/signup`, `login`) call `authClient.signUp.email` / `authClient.signIn.email`. Better Auth sets an httpOnly session cookie.
+3. **`useAuthSync`** (`src/hooks/use-auth-sync.ts`) makes that session the source of truth: it mirrors the signed-in user into the local store (same user id) and signs the local store out when the real session ends. The dashboard shell, onboarding and auth pages route on its status (`loading` / `signed-out` / `signed-in`).
+4. **Log out** (`src/hooks/use-logout.ts`) calls `authClient.signOut()` and then ends the local session.
+5. **Emails** (Resend, `src/lib/resend.ts` + `src/lib/emails.ts`): password reset (`/forgot-password` → `/reset-password`), email verification on sign-up, and workspace invitations (`/accept-invitation/[id]`). Reserved test addresses (`@example.com`, `*.test`) are never emailed.
 
-**Demo logins:** the seeded demo people (`demo@flowdesk.com`, `rohan@dreamkasper.test`, …) sign in with any password. Their emails use the reserved `.test` domain and can't be used to sign up. Unknown emails are rejected.
+A new account has no workspace, so it lands on onboarding ("Create your first workspace").
 
-The demo user (Shubham) is **Owner** of *Dream Kasper LLP* and a **Member** of the small *Northwind Studio* workspace, so roles differ per workspace. `chloe@northwind.test` signs in as Northwind's Owner, who can't see Dream Kasper at all.
+**Not in the database yet:** workspaces and everything inside them (clients, projects, tasks, time off, …) are still kept in this browser's local store until each feature gets its own tables and API.
 
 Other scripts:
 
@@ -33,9 +35,9 @@ Other scripts:
 | `npm run test:e2e` | Playwright tests in `e2e/` (first run: `npx playwright install chromium`) |
 | `npm run db:generate` / `db:migrate` / `db:push` / `db:studio` | Drizzle Kit against `DATABASE_URL` |
 
-Copy `.env.example` to `.env.local` before working on anything backend-related.
+Copy `.env.example` to `.env.local` and fill in at least `DATABASE_URL`, `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` (plus `RESEND_API_KEY` / `EMAIL_FROM` for emails), then run `npm run db:migrate`.
 
-To start over, use **Settings → Data → Reset demo data** (or *Reset demo data* in the avatar menu).
+End-to-end tests sign up real `e2e.*@example.com` accounts; `e2e/global-teardown.ts` deletes them after every run.
 
 ## Stack
 
@@ -93,16 +95,15 @@ src/
   lib/                 utils, dates, time-off (working-day rules), holidays (date-holidays lookup), organizations (slugs + role/Owner rules),
                        and integration clients: auth, auth-client, cloudinary, firebase, resend,
                        permissions, errors (integration files are placeholders)
-  constants/           Priorities, statuses, colors, roles, demo credentials
+  constants/           Priorities, statuses, colors, roles
   hooks/               Shared client hooks (useProject, useLogout)
   store/               Client-side mock data layer (see below)
     store.ts           useSyncExternalStore store + localStorage persistence
     hooks.ts           useWorkspace, useRootState, useCurrentUser, useUserWorkspaces, useHydrated
     organization.ts    Organization scoping: selectWorkspace, memberships, roles, safePathForWorkspace
     selectors.ts       Pure derived views over the active workspace (re-exports organization.ts)
-    migrations.ts      Versioned localStorage upgrades (v1 → v2 → v3)
     actions/           Mutations the UI calls (createTask, moveTask, addStage, createOrganization, switchOrganization, …)
-    seed/              Seed data: Dream Kasper LLP (main demo) and the tiny Northwind Studio workspace
+    initial-state.ts   The empty store every browser starts with
   types/               Domain types shared by UI and (later) the API
 e2e/                   Playwright specs
 ```
@@ -120,12 +121,12 @@ app/api/**/route.ts → controllers/*.controller.ts → services/*.service.ts �
 - Roles live on the **membership** (`OrganizationMember.role`), never on `User`. `useCurrentUser()` returns a `Member` (user + membership) whose `role` is the role in the active workspace. Role rules (including "at least one Owner") are pure functions in `src/lib/organizations.ts`.
 - Components **never write state directly**. Every mutation goes through an action in `src/store/actions/*`, for example `createTask`, `updateTask`, `moveTask`, `addStage`, `deleteStage(id, moveTo)`, `addComment`, `addAttachments`, `createOrganization`, `switchOrganization`, `updateOrganizationMemberRole` and `leaveOrganization`. Actions stamp new records with the active `organizationId`, reject cross-workspace references (e.g. a project using another workspace's client), and record activity entries.
 - Time-off rules that don't depend on the UI (working days, leave-day counting) live in `src/lib/time-off.ts`, and form payloads in `src/validators/{leave,holiday}.validator.ts`, so the future `leave.service.ts` and controllers can reuse them as-is.
-- `src/store/store.ts` is a small `useSyncExternalStore` store. Writes to `localStorage` are debounced and flushed when the page is hidden. Saved state is versioned (`STATE_VERSION = 4`); older single-organization saves are migrated into *Dream Kasper LLP* instead of being discarded.
+- `src/store/store.ts` is a small `useSyncExternalStore` store. Writes to `localStorage` are debounced and flushed when the page is hidden. Saved state is versioned (`STATE_VERSION = 5`); saves from another version are discarded.
 
-To connect the real backend, re-implement the actions in `src/store/actions` as calls to `/api/*` (with optimistic updates, or a query cache) and replace `useWorkspace` reads with data fetching scoped to the active organization; then `src/store/seed` can go. Better Auth will provide the user identity only; workspace access and roles come from the `organization_members` table. The shapes in `src/types` are designed to map onto the Drizzle tables in `src/db/schema`. Stages are their own collection keyed by `projectId`, and tasks reference `stageId` plus an `order`, so there is no fixed status enum.
+To connect the real backend, re-implement the actions in `src/store/actions` as calls to `/api/*` (with optimistic updates, or a query cache) and replace `useWorkspace` reads with data fetching scoped to the active organization; then the local store can go. Better Auth will provide the user identity only; workspace access and roles come from the `organization_members` table. The shapes in `src/types` are designed to map onto the Drizzle tables in `src/db/schema`. Stages are their own collection keyed by `projectId`, and tasks reference `stageId` plus an `order`, so there is no fixed status enum.
 
-## Demo-mode limitations
+## Local-store limitations
 
 - **Uploads stay in the browser.** Images of 350 KB or less and text/code files of 64 KB or less are stored inline, so their previews survive a reload. Larger files, videos and PDFs use `URL.createObjectURL`: they preview during the session, and after a reload they show "Preview not available".
-- **Storage is limited.** `localStorage` holds about 5 MB. If it fills up, a console warning is logged and new changes stop persisting until you reset the demo data.
-- **Some things are simulated.** Notifications are sample data. Invites, password reset and the language setting show a toast only.
+- **Storage is limited.** `localStorage` holds about 5 MB. If it fills up, a console warning is logged and new changes stop persisting.
+- **Some things are simulated.** In-app notifications, inviting from the Team page and the language setting are local only. (Password reset and invitation emails are real — see "How auth works".)

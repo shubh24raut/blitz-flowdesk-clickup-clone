@@ -10,7 +10,8 @@ import { WorkspaceForm } from "@/components/workspace/workspace-form";
 import { useLogout } from "@/hooks/use-logout";
 import { wait } from "@/lib/utils";
 import { createOrganization } from "@/store/actions/organizations";
-import { useHydrated, useRootState } from "@/store/hooks";
+import { useAuthSync } from "@/hooks/use-auth-sync";
+import { useRootState } from "@/store/hooks";
 import { currentUserId, resolveActiveOrganizationId } from "@/store/selectors";
 
 /**
@@ -19,21 +20,19 @@ import { currentUserId, resolveActiveOrganizationId } from "@/store/selectors";
  */
 export default function OnboardingPage() {
   const router = useRouter();
-  const hydrated = useHydrated();
+  const auth = useAuthSync();
   const state = useRootState();
   const logout = useLogout();
   const [inviteInfo, setInviteInfo] = useState(false);
-  const session = state.session;
-  const hasWorkspace = Boolean(session && resolveActiveOrganizationId(state));
+  const hasWorkspace = auth === "signed-in" && resolveActiveOrganizationId(state) !== null;
   const email = state.users.find((u) => u.id === currentUserId(state))?.email;
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (!session) router.replace("/login");
+    if (auth === "signed-out") router.replace("/login");
     else if (hasWorkspace) router.replace("/dashboard");
-  }, [hydrated, session, hasWorkspace, router]);
+  }, [auth, hasWorkspace, router]);
 
-  const ready = hydrated && session && !hasWorkspace;
+  const ready = auth === "signed-in" && !hasWorkspace;
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-lavender px-4 py-10">

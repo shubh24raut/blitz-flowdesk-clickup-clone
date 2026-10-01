@@ -216,7 +216,7 @@ export default function LandingPage() {
                 holidays. Run each company you work with in its own workspace.
               </p>
               <CtaButtons align="center" className="mt-8" />
-              <p className="mt-4 text-xs text-muted-foreground">Free to try. The demo runs entirely in your browser — nothing to install.</p>
+              <p className="mt-4 text-xs text-muted-foreground">Free to get started — create your first workspace in under a minute.</p>
             </div>
 
             <div className="relative mx-auto mt-14 max-w-5xl">
@@ -315,7 +315,7 @@ export default function LandingPage() {
             <Building2 className="relative mx-auto size-10 opacity-90" />
             <h2 className="relative mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Bring your next project into FlowDesk</h2>
             <p className="relative mx-auto mt-3 max-w-xl text-white/80">
-              Create a workspace for your team in under a minute, or explore the demo workspace first.
+              Create a workspace for your team in under a minute.
             </p>
             <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link

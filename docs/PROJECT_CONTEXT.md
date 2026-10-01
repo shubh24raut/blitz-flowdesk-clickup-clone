@@ -13,7 +13,7 @@ FlowDesk is a project-management SaaS for agencies and teams that do client work
 - **ClickUp-style Kanban board** with drag and drop, plus list, calendar and timeline views.
 - **Team, time off (leave + holidays), reports and settings** around that.
 
-FlowDesk is **multi-organization**: a user can belong to several workspaces (organizations) and switch between them. Each workspace is fully isolated: its own clients, projects, tasks, team, roles, time-off policies, holidays and settings. The main demo workspace is "Dream Kasper LLP", an Indian team of 8 people; a tiny second workspace, "Northwind Studio", exists for trying out switching.
+FlowDesk is **multi-organization**: a user can belong to several workspaces (organizations) and switch between them. Each workspace is fully isolated: its own clients, projects, tasks, team, roles, time-off policies, holidays and settings. There is **no demo data**: every account is real (Better Auth) and starts empty, creating its first workspace on onboarding.
 
 ## 2. Current status (important)
 
@@ -22,9 +22,9 @@ FlowDesk is **multi-organization**: a user can belong to several workspaces (org
 | UI / frontend | **Done and working.** Every feature below is usable. |
 | Data | **Mock only.** All data lives in the browser (`localStorage`) through a small client-side store. There is no API and no database yet. |
 | Backend | **Scaffolded, not implemented.** Folders and placeholder files exist for route handlers, controllers, services, repositories, Drizzle schemas and integrations. They contain only a one-line comment plus `export {};`. |
-| Auth | **Better Auth is set up on the server, the UI still uses the fake mock auth.** `src/lib/auth.ts` (Drizzle adapter, email/password, optional Google, organization plugin), `src/lib/auth-client.ts`, `src/lib/session.ts` (`getSession`), route handler `src/app/api/auth/[...all]/route.ts`. Tables `users`, `sessions`, `accounts`, `verifications`, `organizations`, `organization_members`, `invitations` are migrated to Neon (`src/db/migrations/0000_auth_and_organizations.sql`). New sessions reopen the user's first active workspace; creating a workspace makes you Owner and switches to it. Roles are stored lowercase in the DB (`owner/admin/member`) and mapped with `roleFromDb` / `roleToDb` in `lib/organizations.ts`. Next step: point the login/signup/onboarding/workspace UI at `authClient`. |
+| Auth | **Real (Better Auth), end to end.** Sign-up/sign-in/sign-out, password reset and invitation acceptance all use Better Auth. `src/lib/auth.ts` (server: Drizzle adapter, email/password, organization plugin, Resend email hooks), `src/lib/auth-client.ts` (browser), `src/lib/session.ts` (`getSession`), route handler `src/app/api/auth/[...all]/route.ts`. `src/hooks/use-auth-sync.ts` makes the Better Auth session the source of truth and mirrors the user (same id) into the local store; the dashboard shell, onboarding and auth pages route on it. Tables `users`, `sessions`, `accounts`, `verifications`, `organizations`, `organization_members`, `invitations` are migrated to Neon. Roles are lowercase in the DB and mapped with `roleFromDb` / `roleToDb`. No demo logins remain. |
 | Workspaces | **Done (mock).** Memberships with per-workspace roles, workspace switcher, create / rename / leave / delete workspace, onboarding for users with no workspace. |
-| Tests | Vitest unit tests (pure logic, organization scoping, role rules, localStorage migration) and Playwright end-to-end tests (sign-in, time off, workspace switching and creation) pass. |
+| Tests | Vitest unit tests (pure logic, organization scoping, role rules, local session mirror, email templates) and Playwright end-to-end tests (landing, real sign-up/sign-in/sign-out, onboarding, workspaces). E2E sign up real `e2e.*@example.com` accounts; `e2e/global-teardown.ts` deletes them after each run. |
 
 The next big phase is building the real backend with the architecture in section 4 and swapping the mock store for API calls.
 
@@ -70,7 +70,7 @@ app/api/**/route.ts      (Route Handler — thin)
 - **Organization scoping lives in one place:** `selectWorkspace(state)` in `src/store/organization.ts` returns a `WorkspaceState` (the state filtered to the active organization, memoised per snapshot). Components read it with `useWorkspace()` / `useCurrentUser()` and derive views with the pure functions in `src/store/selectors.ts`, so no component filters by `organizationId` itself. `useRootState()` (unscoped) is only for workspace-level UI: switcher, onboarding, manage workspaces.
 - Org selectors/helpers: `getActiveOrganization`, `getOrganizationsForUser`, `getUserWorkspaces`, `getCurrentMembership`, `getCurrentRole`, `isCurrentUserOwner`, `isCurrentUserAdmin`, `canManageOrganization`, `getOrganizationMembers/Clients/Projects/Tasks/LeaveRequests`, `resolveActiveOrganizationId`, `safePathForWorkspace` (where to go when the URL shows another workspace's project or client).
 - Components **never write state directly.** Every mutation goes through an action in `src/store/actions/*` (e.g. `createTask`, `moveTask`, `requestLeave`, `reviewLeave`, and in `actions/organizations.ts`: `createOrganization`, `updateOrganization`, `switchOrganization`, `deleteOrganization`, `addOrganizationMember`, `updateOrganizationMemberRole`, `setOrganizationMemberStatus`, `removeOrganizationMember`, `leaveOrganization`). Actions stamp new records with the active `organizationId`, reject cross-workspace references (a project can't use another workspace's client; a task can't sit in another project's stage), and write activity-log entries.
-- State is saved to `localStorage` (debounced), with versioned migrations in `src/store/migrations.ts` (`STATE_VERSION = 4`) so upgrades don't wipe demo data. v2 → v3 turned the single `organization` into the first workspace (Dream Kasper LLP), moved `User.role/status/holidayCalendarId` onto memberships and added `organizationId` to every org-owned record.
+- State is saved to `localStorage` (debounced). It starts empty (`src/store/initial-state.ts`, `STATE_VERSION = 5`); saves from another version are discarded. Workspaces and their data live here until each feature moves to the database.
 - **Plan for the switch:** re-implement the functions in `src/store/actions` as calls to `/api/*` (with optimistic updates or a query cache), replace `useWorkspace` reads with data fetching scoped to the active organization, then delete `src/store/seed`. Better Auth supplies only the user identity; workspace access and roles come from `organization_members`.
 - Logic that doesn't depend on the UI is already kept outside React so the server can reuse it: `src/lib/time-off.ts` (working-day maths), `src/lib/organizations.ts` (slugs and role rules, including "every workspace keeps an Owner") and `src/validators/*` (Zod schemas).
 
@@ -108,7 +108,7 @@ src/
 │                          auth, auth-client, cloudinary, firebase, resend, permissions, errors (placeholders)
 ├── constants/             priorities, statuses, colors, roles, leave/holiday styles, weekdays
 ├── hooks/                 useProject, useLogout
-├── store/                 mock data layer: store.ts, hooks.ts, organization.ts (scoping), selectors.ts, migrations.ts, actions/, seed/
+├── store/                 local data layer: store.ts, hooks.ts, initial-state.ts, organization.ts (scoping), selectors.ts, actions/
 └── types/                 domain types shared by UI and (later) the API
 e2e/                       Playwright specs
 drizzle.config.ts  vitest.config.ts  playwright.config.ts  components.json  .env.example
@@ -197,9 +197,9 @@ Route: `/time-off` with tabs `?tab=mine | approvals | team | holidays | policies
 10. Removing a member from a workspace deletes their leave requests in that workspace only; deleting a calendar moves its members to the default.
 11. Everything above is per workspace: working week, leave types, calendars, holidays, requests and approvers never cross workspaces.
 
-Seed data (Dream Kasper LLP): India — Maharashtra calendar (fixed-date public holidays for this year and next), two company holidays, four leave types (Casual 12, Sick 8 auto-approved, Earned 15, Unpaid unlimited), and sample requests (pending, approved, rejected, someone on leave today). Northwind Studio has its own England calendar and leave types (Annual 20, Sick unlimited).
+New workspaces start with three leave types (Annual 20, Sick 10 auto-approved, Unpaid unlimited), a Monday–Friday week and no holiday calendar.
 
-## 7. Roles and demo logins
+## 7. Roles
 
 Roles are **per workspace** (on `OrganizationMember`), resolved from `currentUserId + activeOrganizationId`. The same person can be Owner in one workspace and Member in another.
 
@@ -209,7 +209,7 @@ Roles are **per workspace** (on `OrganizationMember`), resolved from `currentUse
 | Admin | Edit workspace settings, manage team (invite, change Admin/Member roles, deactivate, remove — not Owners), approve leave, manage time-off policies and holidays. |
 | Member | Everything project-related; request and cancel their own leave; view holidays and who's out. No Approvals or Policies tabs. |
 
-Demo users (any 6+ character password): `demo@flowdesk.com` (Shubham Raut — Owner of Dream Kasper LLP, Member of Northwind Studio), `rohan@dreamkasper.test` (Admin), `sneha@dreamkasper.test` (Admin), `ananya@`, `karan@`, `isha@`, `vikram@dreamkasper.test` (Members), `chloe@northwind.test` (Owner of Northwind Studio only).
+There are no demo users: create a real account at `/signup`. Whoever creates a workspace is its Owner.
 
 ## 8. Conventions
 

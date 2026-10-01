@@ -1,77 +1,46 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AuthCard, GoogleIcon, OrDivider } from "@/components/auth/auth-card";
+import { AuthCard } from "@/components/auth/auth-card";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
-import { DEMO_CREDENTIALS } from "@/constants";
 import { authClient } from "@/lib/auth-client";
-import { firstName, wait } from "@/lib/utils";
-import { signIn, signInAccount, signInWithGoogle } from "@/store/actions/auth";
-import { isDemoLoginAllowed } from "../actions";
+import { firstName } from "@/lib/utils";
+import { startLocalSession } from "@/store/actions/auth";
 
 const schema = z.object({
   email: z.email("Enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Enter your password"),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [googleLoading, setGoogleLoading] = useState(false);
   const {
     register,
     handleSubmit,
-    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
 
-  /**
-   * Real accounts (Better Auth) sign in with their real password. Seeded demo people
-   * without a real account can still use any password to explore the mock data.
-   */
+  /** Better Auth checks the password and sets the session cookie; the local store then mirrors the user. */
   async function onSubmit(values: FormValues) {
     const { data, error } = await authClient.signIn.email({ email: values.email, password: values.password });
-    if (data) {
-      const user = signInAccount({ email: data.user.email, name: data.user.name });
-      toast.success(`Welcome back, ${firstName(user.name)}!`);
-      router.push("/dashboard");
+    if (error) {
+      if (error.status === 429) toast.error("Too many attempts — please wait a minute and try again.");
+      else setError("password", { message: "Incorrect email or password." });
       return;
     }
-    if (error?.status === 429) {
-      toast.error("Too many attempts — please wait a minute and try again.");
-      return;
-    }
-    if (await isDemoLoginAllowed(values.email)) {
-      const user = signIn(values.email);
-      toast.success(`Welcome back, ${firstName(user.name)}!`, { description: "Signed in to the demo data." });
-      router.push("/dashboard");
-      return;
-    }
-    setError("password", { message: "Incorrect email or password." });
-  }
-
-  async function onGoogle() {
-    setGoogleLoading(true);
-    await wait(700);
-    const user = signInWithGoogle();
-    toast.success(`Signed in with Google as ${user.name}`);
+    const user = startLocalSession(data.user);
+    toast.success(`Welcome back, ${firstName(user.name)}!`);
     router.push("/dashboard");
-  }
-
-  function fillDemo() {
-    setValue("email", DEMO_CREDENTIALS.email, { shouldValidate: true });
-    setValue("password", DEMO_CREDENTIALS.password, { shouldValidate: true });
   }
 
   return (
@@ -87,11 +56,6 @@ export default function LoginPage() {
         </>
       }
     >
-      <Button variant="secondary" size="lg" className="w-full" onClick={onGoogle} loading={googleLoading}>
-        {!googleLoading && <GoogleIcon />}
-        Continue with Google
-      </Button>
-      <OrDivider />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <Field label="Email address" htmlFor="email" error={errors.email?.message}>
           <Input id="email" type="email" autoComplete="email" placeholder="you@company.com" aria-invalid={!!errors.email} {...register("email")} />
@@ -112,19 +76,6 @@ export default function LoginPage() {
           Sign in
         </Button>
       </form>
-      <button
-        type="button"
-        onClick={fillDemo}
-        className="mt-5 flex w-full items-start gap-3 rounded-xl border border-dashed border-primary/30 bg-primary-light/60 p-3 text-left text-xs transition hover:bg-primary-light"
-      >
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-        <span>
-          <span className="block font-semibold text-primary">Use the demo account</span>
-          <span className="text-muted-foreground">
-            {DEMO_CREDENTIALS.email} · {DEMO_CREDENTIALS.password} — explore FlowDesk with sample data.
-          </span>
-        </span>
-      </button>
     </AuthCard>
   );
 }

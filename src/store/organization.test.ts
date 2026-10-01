@@ -1,22 +1,25 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { LAST_OWNER_MESSAGE } from "@/lib/organizations";
-import { signIn, signUp } from "@/store/actions/auth";
+import { endLocalSession, startLocalSession } from "@/store/actions/auth";
 import { createClient } from "@/store/actions/clients";
 import {
+  addOrganizationMember,
   createOrganization,
   leaveOrganization,
   removeOrganizationMember,
+  setOrganizationMemberStatus,
   switchOrganization,
   updateOrganizationMemberRole,
 } from "@/store/actions/organizations";
 import { createProject } from "@/store/actions/projects";
 import { createTask, moveTask } from "@/store/actions/tasks";
 import { requestLeave } from "@/store/actions/time-off";
-import { migrateState, migrateV3ToV4, type StateV2 } from "@/store/migrations";
-import { createSeedState, demoEmails, DREAM_KASPER_ID, membershipId, NORTHWIND_ID, STATE_VERSION } from "@/store/seed";
+import { createInitialState } from "@/store/initial-state";
 import {
   getCurrentRole,
+  getMembership,
   getOrganizationProjects,
+  getProjectStages,
   getUserWorkspaces,
   isCurrentUserAdmin,
   isCurrentUserOwner,
@@ -25,275 +28,223 @@ import {
   selectWorkspace,
 } from "@/store/selectors";
 import { getState, setState } from "@/store/store";
-import type { AppState } from "@/types";
+import type { Client, Organization, Project, Task } from "@/types";
+
+/** Stand-ins for Better Auth users (the local store mirrors their ids). */
+const ANNA = { id: "u_anna", name: "Anna Owner", email: "anna@example.com" };
+const BEN = { id: "u_ben", name: "Ben Builder", email: "ben@example.com" };
 
 const ws = () => selectWorkspace(getState());
 
+const CLIENT = { contactPerson: "", email: "", phone: "", website: "", industry: "", address: "", status: "Active", color: "#5B5CF6", notes: "" } as const;
+
+function project(name: string, clientId: string | null = null): Project {
+  return createProject({ name, description: "", clientId, status: "Active", color: "#5B5CF6", startDate: "", dueDate: "", memberIds: [] }, "simple");
+}
+
+function ok<T>(result: { ok: true; value: T } | { ok: false; error: string }): T {
+  if (!result.ok) throw new Error(result.error);
+  return result.value;
+}
+
+interface World {
+  alpha: Organization;
+  beta: Organization;
+  alphaClient: Client;
+  betaClient: Client;
+  alphaProject: Project;
+  betaProject: Project;
+  alphaTask: Task;
+  betaTask: Task;
+}
+
+/**
+ * Ben owns "Beta Studio" and adds Anna as a Member. Anna owns "Alpha Agency".
+ * Each workspace gets a client, a project and a task. Anna is signed in at the end,
+ * with Alpha active.
+ */
+function buildWorld(): World {
+  startLocalSession(ANNA);
+  endLocalSession();
+
+  startLocalSession(BEN);
+  const beta = ok(createOrganization({ name: "Beta Studio" }));
+  const betaClient = createClient({ ...CLIENT, name: "Beta Client" });
+  const betaProject = project("Beta Project", betaClient.id);
+  const betaTask = createTask({ projectId: betaProject.id, stageId: getProjectStages(ws(), betaProject.id)[0].id, title: "Beta task" });
+  const invite = ok(addOrganizationMember({ name: ANNA.name, email: ANNA.email, role: "Member" }));
+  ok(setOrganizationMemberStatus(invite.id, "Active"));
+  endLocalSession();
+
+  startLocalSession(ANNA);
+  const alpha = ok(createOrganization({ name: "Alpha Agency" }));
+  const alphaClient = createClient({ ...CLIENT, name: "Alpha Client" });
+  const alphaProject = project("Alpha Project", alphaClient.id);
+  const alphaTask = createTask({ projectId: alphaProject.id, stageId: getProjectStages(ws(), alphaProject.id)[0].id, title: "Alpha task" });
+
+  return { alpha, beta, alphaClient, betaClient, alphaProject, betaProject, alphaTask, betaTask };
+}
+
 beforeEach(() => {
   window.localStorage.clear();
-  setState(() => createSeedState());
-  signIn("demo@flowdesk.com"); // Shubham: Owner of Dream Kasper, Member of Northwind
+  setState(() => createInitialState());
+});
+
+describe("local session (mirror of the Better Auth session)", () => {
+  it("uses the Better Auth user id and never duplicates the user", () => {
+    const user = startLocalSession(ANNA);
+    expect(user.id).toBe(ANNA.id);
+    startLocalSession({ ...ANNA, name: "Anna Renamed" });
+    expect(getState().users).toHaveLength(1);
+    expect(getState().users[0].name).toBe("Anna Renamed");
+    expect(getState().session?.userId).toBe(ANNA.id);
+    endLocalSession();
+    expect(getState().session).toBeNull();
+  });
+
+  it("starts a brand-new account with no workspace (onboarding)", () => {
+    startLocalSession(ANNA);
+    expect(resolveActiveOrganizationId(getState())).toBeNull();
+    expect(ws().projects).toEqual([]);
+  });
+
+  it("refuses to change data while signed out", () => {
+    expect(() => createOrganization({ name: "Nobody's" })).toThrow("Not signed in.");
+  });
 });
 
 describe("memberships", () => {
-  it("lets one user belong to several organizations", () => {
-    const workspaces = getUserWorkspaces(getState(), "u_shubham");
+  it("lets one user belong to several organizations, with a role in each", () => {
+    buildWorld();
+    const workspaces = getUserWorkspaces(getState(), ANNA.id);
     expect(workspaces.map((w) => [w.organization.name, w.membership.role])).toEqual([
-      ["Dream Kasper LLP", "Owner"],
-      ["Northwind Studio", "Member"],
+      ["Beta Studio", "Member"],
+      ["Alpha Agency", "Owner"],
     ]);
   });
 
   it("resolves roles per organization, not per user", () => {
+    const { beta } = buildWorld();
     expect(getCurrentRole(getState())).toBe("Owner");
     expect(isCurrentUserOwner(getState())).toBe(true);
-    switchOrganization(NORTHWIND_ID);
+    ok(switchOrganization(beta.id));
     expect(getCurrentRole(getState())).toBe("Member");
     expect(isCurrentUserAdmin(getState())).toBe(false);
     expect(ws().currentUser.role).toBe("Member");
-    // A Member can't manage the Northwind owner.
-    const result = removeOrganizationMember(membershipId(NORTHWIND_ID, "u_chloe"));
-    expect(result.ok).toBe(false);
+    // A Member can't remove Beta's owner.
+    const ben = getMembership(getState(), beta.id, BEN.id)!;
+    expect(removeOrganizationMember(ben.id).ok).toBe(false);
   });
 
   it("falls back to another organization when the stored one is no longer accessible", () => {
+    const { beta } = buildWorld();
     setState((s) => ({ ...s, activeOrganizationId: "org_gone" }));
-    expect(resolveActiveOrganizationId(getState())).toBe(DREAM_KASPER_ID);
-  });
-
-  it("has no active organization for a brand-new account (onboarding)", () => {
-    signUp("New Person", "new.person@example.com");
-    expect(resolveActiveOrganizationId(getState())).toBeNull();
-    expect(ws().projects).toEqual([]);
-    expect(ws().clients).toEqual([]);
+    expect(resolveActiveOrganizationId(getState())).toBe(beta.id);
   });
 });
 
 describe("switching and isolation", () => {
   it("scopes projects to the active organization", () => {
-    const dkProjects = ws().projects.map((p) => p.id);
-    expect(dkProjects).toContain("p_web");
-    expect(switchOrganization(NORTHWIND_ID).ok).toBe(true);
-    expect(ws().organization.name).toBe("Northwind Studio");
-    expect(ws().projects.map((p) => p.id)).toEqual(["p_nw_bloom"]);
-    switchOrganization(DREAM_KASPER_ID);
-    expect(ws().projects.map((p) => p.id)).toEqual(dkProjects);
+    const { alpha, beta, alphaProject, betaProject } = buildWorld();
+    expect(ws().projects.map((p) => p.id)).toEqual([alphaProject.id]);
+    ok(switchOrganization(beta.id));
+    expect(ws().organization.name).toBe("Beta Studio");
+    expect(ws().projects.map((p) => p.id)).toEqual([betaProject.id]);
+    ok(switchOrganization(alpha.id));
+    expect(ws().projects.map((p) => p.id)).toEqual([alphaProject.id]);
   });
 
   it("never shows Org A's clients in Org B", () => {
-    const client = createClient({
-      name: "Only In Dream Kasper",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      website: "",
-      industry: "",
-      address: "",
-      status: "Active",
-      color: "#5B5CF6",
-      notes: "",
-    });
-    expect(client.organizationId).toBe(DREAM_KASPER_ID);
-    switchOrganization(NORTHWIND_ID);
-    expect(ws().clients.map((c) => c.id)).not.toContain(client.id);
-    expect(ws().clients.every((c) => c.organizationId === NORTHWIND_ID)).toBe(true);
+    const { beta, alphaClient } = buildWorld();
+    expect(alphaClient.organizationId).not.toBe(beta.id);
+    ok(switchOrganization(beta.id));
+    expect(ws().clients.map((c) => c.id)).not.toContain(alphaClient.id);
+    expect(ws().clients.every((c) => c.organizationId === beta.id)).toBe(true);
   });
 
-  it("never shows Org A's tasks, stages, comments or activity in Org B", () => {
-    const dkTaskIds = new Set(ws().tasks.map((t) => t.id));
-    switchOrganization(NORTHWIND_ID);
-    const nw = ws();
-    const nwProjectIds = new Set(nw.projects.map((p) => p.id));
-    expect(nw.tasks.length).toBeGreaterThan(0);
-    expect(nw.tasks.some((t) => dkTaskIds.has(t.id))).toBe(false);
-    expect(nw.tasks.every((t) => nwProjectIds.has(t.projectId))).toBe(true);
-    expect(nw.stages.every((s) => nwProjectIds.has(s.projectId))).toBe(true);
-    expect(nw.comments.every((c) => nwProjectIds.has(c.projectId))).toBe(true);
-    expect(nw.activities.every((a) => a.organizationId === NORTHWIND_ID)).toBe(true);
-    expect(nw.notifications.every((n) => n.organizationId === NORTHWIND_ID)).toBe(true);
-    expect(nw.users.map((u) => u.id).sort()).toEqual(["u_chloe", "u_shubham"]);
+  it("never shows Org A's tasks, stages or activity in Org B", () => {
+    const { beta, alphaTask, betaProject } = buildWorld();
+    ok(switchOrganization(beta.id));
+    const b = ws();
+    expect(b.tasks.map((t) => t.id)).not.toContain(alphaTask.id);
+    expect(b.tasks.every((t) => t.projectId === betaProject.id)).toBe(true);
+    expect(b.stages.every((s) => s.projectId === betaProject.id)).toBe(true);
+    expect(b.activities.every((a) => a.organizationId === beta.id)).toBe(true);
+    expect(b.users.map((u) => u.id).sort()).toEqual([ANNA.id, BEN.id]);
   });
 
   it("keeps time-off policies separate", () => {
-    const dkTypes = ws().leaveTypes.map((t) => t.name);
-    switchOrganization(NORTHWIND_ID);
-    expect(ws().leaveTypes.map((t) => t.name)).toEqual(["Annual leave", "Sick leave"]);
-    expect(ws().leaveTypes.map((t) => t.name)).not.toEqual(dkTypes);
-    expect(ws().leaveRequests).toEqual([]);
-    expect(ws().organization.defaultHolidayCalendarId).toBe("hc_nw_england");
-    // A new request is filed in the active organization only.
-    const result = requestLeave({ typeId: "lt_nw_annual", startDate: "2031-03-04", endDate: "2031-03-04", halfDay: false, reason: "" });
-    expect(result.ok && result.value.organizationId).toBe(NORTHWIND_ID);
-    switchOrganization(DREAM_KASPER_ID);
-    expect(ws().leaveRequests.some((r) => result.ok && r.id === result.value.id)).toBe(false);
+    const { alpha, beta } = buildWorld();
+    const alphaTypes = ws().leaveTypes;
+    expect(alphaTypes.length).toBeGreaterThan(0);
+    expect(alphaTypes.every((t) => t.organizationId === alpha.id)).toBe(true);
+    const annual = alphaTypes.find((t) => t.name === "Annual leave")!;
+    const request = ok(requestLeave({ typeId: annual.id, startDate: "2031-03-04", endDate: "2031-03-04", halfDay: false, reason: "" }));
+    expect(request.organizationId).toBe(alpha.id);
+
+    ok(switchOrganization(beta.id));
+    expect(ws().leaveTypes.some((t) => t.id === annual.id)).toBe(false);
+    expect(ws().leaveRequests.some((r) => r.id === request.id)).toBe(false);
   });
 
   it("rejects cross-workspace references", () => {
-    switchOrganization(NORTHWIND_ID);
-    // Dream Kasper's client can't be attached to a Northwind project.
-    expect(() =>
-      createProject({ name: "Bad", description: "", clientId: "c_acme", status: "Active", color: "#000000", startDate: "", dueDate: "", memberIds: [] }),
-    ).toThrow();
-    // A task can't go into a stage from another workspace's project.
-    expect(() => createTask({ projectId: "p_nw_bloom", stageId: "s_web_backlog", title: "Bad" })).toThrow();
-    expect(moveTask("t_nw_1", "s_web_done", 0).stageChanged).toBe(false);
-    expect(getState().tasks.find((t) => t.id === "t_nw_1")?.stageId).toBe("s_nw_todo");
+    const { alphaProject, betaClient, betaProject, alphaTask } = buildWorld();
+    // Beta's client can't be attached to an Alpha project.
+    expect(() => project("Bad", betaClient.id)).toThrow();
+    // A task can't go into a stage of another workspace's project.
+    const betaStage = getState().stages.find((s) => s.projectId === betaProject.id)!;
+    expect(() => createTask({ projectId: alphaProject.id, stageId: betaStage.id, title: "Bad" })).toThrow();
+    expect(moveTask(alphaTask.id, betaStage.id, 0).stageChanged).toBe(false);
+    expect(getState().tasks.find((t) => t.id === alphaTask.id)?.projectId).toBe(alphaProject.id);
   });
 });
 
 describe("owner rule", () => {
-  it("won't demote, remove or let the final owner leave", () => {
-    const shubham = membershipId(DREAM_KASPER_ID, "u_shubham");
-    expect(updateOrganizationMemberRole(shubham, "Admin")).toEqual({ ok: false, error: LAST_OWNER_MESSAGE });
-    expect(leaveOrganization(DREAM_KASPER_ID).ok).toBe(false);
+  it("won't demote or let the final owner leave", () => {
+    const { alpha } = buildWorld();
+    const anna = getMembership(getState(), alpha.id, ANNA.id)!;
+    expect(updateOrganizationMemberRole(anna.id, "Admin")).toEqual({ ok: false, error: LAST_OWNER_MESSAGE });
+    expect(leaveOrganization(alpha.id).ok).toBe(false);
 
-    // Once someone else is an Owner, stepping down works.
-    expect(updateOrganizationMemberRole(membershipId(DREAM_KASPER_ID, "u_rohan"), "Owner").ok).toBe(true);
-    expect(updateOrganizationMemberRole(shubham, "Admin").ok).toBe(true);
+    // Once someone else is an active Owner, stepping down works.
+    const ben = ok(addOrganizationMember({ name: BEN.name, email: BEN.email, role: "Admin" }));
+    ok(setOrganizationMemberStatus(ben.id, "Active"));
+    ok(updateOrganizationMemberRole(ben.id, "Owner"));
+    expect(updateOrganizationMemberRole(anna.id, "Admin").ok).toBe(true);
   });
 });
 
 describe("creating a workspace", () => {
   it("makes the creator Owner, switches to it and starts empty", () => {
-    const result = createOrganization({ name: "Personal Workspace" });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.value.slug).toBe("personal-workspace");
-    expect(resolveActiveOrganizationId(getState())).toBe(result.value.id);
+    const { alpha } = buildWorld();
+    const created = ok(createOrganization({ name: "Personal Workspace" }));
+    expect(created.slug).toBe("personal-workspace");
+    expect(resolveActiveOrganizationId(getState())).toBe(created.id);
     expect(getCurrentRole(getState())).toBe("Owner");
-    const created = ws();
-    expect(created.projects).toEqual([]);
-    expect(created.clients).toEqual([]);
-    expect(created.users.map((u) => u.id)).toEqual(["u_shubham"]);
-    expect(created.leaveTypes.length).toBeGreaterThan(0);
-
-    // Dream Kasper's data is untouched.
-    expect(getOrganizationProjects(getState(), DREAM_KASPER_ID).length).toBe(5);
+    expect(ws().projects).toEqual([]);
+    expect(ws().clients).toEqual([]);
+    expect(ws().users.map((u) => u.id)).toEqual([ANNA.id]);
+    expect(ws().leaveTypes.length).toBeGreaterThan(0);
+    // Other workspaces are untouched.
+    expect(getOrganizationProjects(getState(), alpha.id)).toHaveLength(1);
   });
 
   it("rejects duplicate slugs", () => {
-    const result = createOrganization({ name: "Another", slug: "dream-kasper" });
-    expect(result).toEqual({ ok: false, error: "That workspace URL is already taken." });
+    buildWorld();
+    expect(createOrganization({ name: "Another", slug: "alpha-agency" })).toEqual({ ok: false, error: "That workspace URL is already taken." });
   });
 });
 
 describe("routing after a switch", () => {
   it("leaves a project or client that belongs to the previous workspace", () => {
-    switchOrganization(NORTHWIND_ID);
+    const { beta, alphaProject, alphaClient, betaProject } = buildWorld();
+    ok(switchOrganization(beta.id));
     const state = getState();
-    expect(safePathForWorkspace(state, "/projects/p_web/tasks")).toBe("/projects");
-    expect(safePathForWorkspace(state, "/clients/c_acme")).toBe("/clients");
-    expect(safePathForWorkspace(state, "/projects/p_nw_bloom/overview")).toBe("/projects/p_nw_bloom/overview");
+    expect(safePathForWorkspace(state, `/projects/${alphaProject.id}/tasks`)).toBe("/projects");
+    expect(safePathForWorkspace(state, `/clients/${alphaClient.id}`)).toBe("/clients");
+    expect(safePathForWorkspace(state, `/projects/${betaProject.id}/overview`)).toBe(`/projects/${betaProject.id}/overview`);
     expect(safePathForWorkspace(state, "/team")).toBe("/team");
     // Unknown ids are left to the page's "not found" state.
     expect(safePathForWorkspace(state, "/projects/p_missing")).toBe("/projects/p_missing");
-  });
-});
-
-/* -------------------------------- Migration -------------------------------- */
-
-function omit<T extends object, K extends keyof T>(item: T, ...keys: K[]): Omit<T, K> {
-  const copy = { ...item };
-  for (const key of keys) delete copy[key];
-  return copy;
-}
-
-/** Rebuilds what a version-2 save of the Dream Kasper demo looked like. */
-function dreamKasperAsV2(state: AppState): StateV2 {
-  const org = state.organizations.find((o) => o.id === DREAM_KASPER_ID)!;
-  const projectIds = new Set(state.projects.filter((p) => p.organizationId === DREAM_KASPER_ID).map((p) => p.id));
-  const strip = <T extends { organizationId: string }>(items: T[]) =>
-    items.filter((x) => x.organizationId === DREAM_KASPER_ID).map((x) => omit(x, "organizationId"));
-  const members = state.organizationMembers.filter((m) => m.organizationId === DREAM_KASPER_ID);
-  return {
-    version: 2,
-    session: state.session,
-    organization: {
-      id: org.id,
-      name: org.name,
-      website: org.website,
-      plan: org.plan,
-      workingDays: org.workingDays,
-      defaultHolidayCalendarId: org.defaultHolidayCalendarId,
-    },
-    users: members.map((m) => {
-      const user = omit(state.users.find((u) => u.id === m.userId)!, "createdAt");
-      return { ...user, role: m.role, status: m.status, joinedAt: m.joinedAt, holidayCalendarId: m.holidayCalendarId };
-    }),
-    clients: strip(state.clients),
-    projects: strip(state.projects),
-    stages: state.stages.filter((s) => projectIds.has(s.projectId)),
-    tasks: state.tasks.filter((t) => projectIds.has(t.projectId)),
-    comments: state.comments.filter((c) => projectIds.has(c.projectId)),
-    attachments: state.attachments.filter((a) => projectIds.has(a.projectId)),
-    activities: strip(state.activities),
-    notifications: strip(state.notifications),
-    holidayCalendars: strip(state.holidayCalendars),
-    holidays: strip(state.holidays),
-    leaveTypes: strip(state.leaveTypes),
-    leaveRequests: strip(state.leaveRequests),
-    settings: state.settings,
-  };
-}
-
-describe("localStorage migration", () => {
-  it("moves a single-organization save into Dream Kasper LLP without losing data", () => {
-    const seed = getState();
-    const v2 = dreamKasperAsV2(seed);
-    const migrated = migrateState(JSON.parse(JSON.stringify(v2)))!;
-
-    expect(migrated.version).toBe(STATE_VERSION);
-    expect(migrated.organizations).toHaveLength(1);
-    expect(migrated.organizations[0]).toMatchObject({ id: DREAM_KASPER_ID, name: "Dream Kasper LLP", slug: "dream-kasper-llp" });
-    expect(migrated.activeOrganizationId).toBe(DREAM_KASPER_ID);
-
-    // Roles moved from users onto memberships.
-    const shubham = migrated.organizationMembers.find((m) => m.userId === "u_shubham");
-    expect(shubham).toMatchObject({ organizationId: DREAM_KASPER_ID, role: "Owner", status: "Active" });
-    expect(migrated.users.find((u) => u.id === "u_shubham")).not.toHaveProperty("role");
-
-    // Everything is still visible, exactly as before.
-    const before = selectWorkspace(seed);
-    const after = selectWorkspace(migrated);
-    expect(after.organization.name).toBe("Dream Kasper LLP");
-    for (const key of ["clients", "projects", "stages", "tasks", "comments", "activities", "notifications", "holidays", "leaveTypes", "leaveRequests"] as const) {
-      expect(after[key].map((x) => x.id).sort(), key).toEqual(before[key].map((x) => x.id).sort());
-    }
-    expect(after.users.map((u) => [u.id, u.role, u.status]).sort()).toEqual(before.users.map((u) => [u.id, u.role, u.status]).sort());
-  });
-
-  it("upgrades version-1 saves (before time off) too", () => {
-    const v2 = dreamKasperAsV2(getState());
-    const rest = omit(v2, "holidayCalendars", "holidays", "leaveTypes", "leaveRequests");
-    const v1 = { ...rest, version: 1, organization: { id: v2.organization.id, name: v2.organization.name, website: "", plan: "Pro" } };
-    const migrated = migrateState(v1)!;
-    expect(migrated.version).toBe(STATE_VERSION);
-    expect(migrated.leaveTypes.length).toBeGreaterThan(0);
-    expect(migrated.leaveTypes.every((t) => t.organizationId === DREAM_KASPER_ID)).toBe(true);
-    expect(selectWorkspace(migrated).projects).toHaveLength(5);
-  });
-
-  it("moves demo people off real email addresses, leaving real people alone", () => {
-    const seed = getState();
-    const v3 = {
-      ...seed,
-      version: 3,
-      users: [
-        ...seed.users.map((u) => (u.id === "u_shubham" ? { ...u, email: "shubham@dreamkasper.com" } : u)),
-        { id: "u_sachin", name: "Sachin", email: "sachin@dreamkasper.com", title: "", color: "#000000", createdAt: "" },
-        { id: "u_real123", name: "Real Person", email: "real@dreamkasper.com", title: "", color: "#000000", createdAt: "" },
-      ],
-    };
-    const migrated = migrateV3ToV4(v3);
-    const email = (id: string) => migrated.users.find((u) => u.id === id)?.email;
-    expect(email("u_shubham")).toBe("shubham@dreamkasper.test");
-    expect(email("u_sachin")).toBe("sachin@dreamkasper.test");
-    expect(email("u_real123")).toBe("real@dreamkasper.com");
-    expect(demoEmails()).not.toContain("shubham@dreamkasper.com");
-    expect(demoEmails().every((e) => e === "demo@flowdesk.com" || e.endsWith(".test"))).toBe(true);
-  });
-
-  it("discards unknown versions", () => {
-    expect(migrateState({ version: 99 })).toBeNull();
   });
 });

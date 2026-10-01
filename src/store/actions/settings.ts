@@ -1,5 +1,5 @@
 import { resolveActiveOrganizationId } from "@/store/organization";
-import { resetState, setState } from "@/store/store";
+import { setState } from "@/store/store";
 import type { ID, NotificationPreferences, Settings } from "@/types";
 
 /** Organization edits live in `./organizations`; re-exported for existing imports. */
@@ -39,6 +39,3 @@ export function clearNotifications() {
   });
 }
 
-export function resetDemoData() {
-  resetState();
-}

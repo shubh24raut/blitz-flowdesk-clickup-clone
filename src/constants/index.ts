@@ -92,8 +92,6 @@ export const ROLES: Role[] = ["Owner", "Admin", "Member"];
 
 export const LANGUAGES = ["English", "Hindi", "Español", "Français", "Deutsch"];
 
-export const DEMO_CREDENTIALS = { email: "demo@flowdesk.com", password: "password" };
-
 export const LEAVE_STATUS_STYLES: Record<LeaveStatus, string> = {
   Pending: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
   Approved: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",

@@ -1,5 +1,4 @@
 import { canEditOrganization, hasAccess, isAdminRole } from "@/lib/organizations";
-import { CURRENT_USER_ID } from "@/store/seed";
 import type {
   AppState,
   Client,
@@ -20,31 +19,32 @@ import type {
  * records by `organizationId`; everything else reads a `WorkspaceState`.
  */
 
-/** Signed-in user. Falls back to the demo owner so server snapshots render something sensible. */
-export function currentUserId(state: AppState): ID {
-  return state.session?.userId ?? CURRENT_USER_ID;
+/** Signed-in user (the Better Auth user id, mirrored into the local store), or `null`. */
+export function currentUserId(state: AppState): ID | null {
+  return state.session?.userId ?? null;
 }
 
 /* -------------------------------- Memberships -------------------------------- */
 
-export function getMembership(state: AppState, organizationId: ID | null, userId: ID = currentUserId(state)): OrganizationMember | null {
-  if (!organizationId) return null;
+export function getMembership(state: AppState, organizationId: ID | null, userId: ID | null = currentUserId(state)): OrganizationMember | null {
+  if (!organizationId || !userId) return null;
   return state.organizationMembers.find((m) => m.organizationId === organizationId && m.userId === userId) ?? null;
 }
 
 /** Memberships that grant access (not deactivated), in the order the user joined them. */
-export function getMembershipsForUser(state: AppState, userId: ID): OrganizationMember[] {
+export function getMembershipsForUser(state: AppState, userId: ID | null): OrganizationMember[] {
+  if (!userId) return [];
   const orgIds = new Set(state.organizations.map((o) => o.id));
   return state.organizationMembers.filter((m) => m.userId === userId && hasAccess(m.status) && orgIds.has(m.organizationId));
 }
 
-export function getOrganizationsForUser(state: AppState, userId: ID = currentUserId(state)): Organization[] {
+export function getOrganizationsForUser(state: AppState, userId: ID | null = currentUserId(state)): Organization[] {
   const byId = new Map(state.organizations.map((o) => [o.id, o]));
   return getMembershipsForUser(state, userId).map((m) => byId.get(m.organizationId)!);
 }
 
 /** Organizations the user can open, each with their role there — what the switcher lists. */
-export function getUserWorkspaces(state: AppState, userId: ID = currentUserId(state)): Array<{ organization: Organization; membership: OrganizationMember }> {
+export function getUserWorkspaces(state: AppState, userId: ID | null = currentUserId(state)): Array<{ organization: Organization; membership: OrganizationMember }> {
   const byId = new Map(state.organizations.map((o) => [o.id, o]));
   return getMembershipsForUser(state, userId).map((membership) => ({ organization: byId.get(membership.organizationId)!, membership }));
 }
@@ -53,7 +53,7 @@ export function getUserWorkspaces(state: AppState, userId: ID = currentUserId(st
  * The organization the UI should show: the stored choice when the user still
  * belongs to it, otherwise their first organization, otherwise `null` (onboarding).
  */
-export function resolveActiveOrganizationId(state: AppState, userId: ID = currentUserId(state)): ID | null {
+export function resolveActiveOrganizationId(state: AppState, userId: ID | null = currentUserId(state)): ID | null {
   const memberships = getMembershipsForUser(state, userId);
   const stored = memberships.find((m) => m.organizationId === state.activeOrganizationId);
   return stored?.organizationId ?? memberships[0]?.organizationId ?? null;
@@ -191,6 +191,9 @@ const NO_ORGANIZATION: Organization = {
   updatedAt: "",
 };
 
+/** Stand-in while nobody is signed in (e.g. during server rendering); the shell shows a skeleton. */
+const SIGNED_OUT_USER: User = { id: "", name: "", email: "", title: "", color: "#5B5CF6", createdAt: "" };
+
 const workspaceCache = new WeakMap<AppState, WorkspaceState>();
 
 /**
@@ -205,7 +208,7 @@ export function selectWorkspace(state: AppState): WorkspaceState {
   const users = getOrganizationMembers(state, orgId);
   const userId = currentUserId(state);
   const membership = getMembership(state, orgId, userId);
-  const account = state.users.find((u) => u.id === userId) ?? state.users[0];
+  const account = state.users.find((u) => u.id === userId) ?? SIGNED_OUT_USER;
   const workspace: WorkspaceState = {
     session: state.session,
     settings: state.settings,

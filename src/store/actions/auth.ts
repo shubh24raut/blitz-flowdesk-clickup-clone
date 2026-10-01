@@ -1,88 +1,52 @@
-import { CURRENT_USER_ID } from "@/store/seed";
-import { DEMO_CREDENTIALS } from "@/constants";
-import { uid } from "@/lib/utils";
 import { resolveActiveOrganizationId } from "@/store/organization";
 import { flushPersistence, getState, setState } from "@/store/store";
 import type { User } from "@/types";
 import { now } from "./internal";
 
-const AVATAR_COLORS = ["#5B5CF6", "#0EA5E9", "#EC4899", "#22C55E", "#F59E0B", "#8B5CF6"];
+/*
+ * Authentication is handled by Better Auth (src/lib/auth.ts, src/lib/auth-client.ts).
+ * These two functions only mirror the signed-in Better Auth user into the local
+ * store, which still holds the app's data until each feature moves to the database.
+ * `useAuthSync` (src/hooks/use-auth-sync.ts) calls them; nothing else should.
+ */
 
-function nameFromEmail(email: string): string {
-  const local = email.split("@")[0] ?? "user";
-  return local
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
+/** The Better Auth user fields the local store needs. */
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+  title?: string | null;
+  color?: string | null;
 }
 
 /**
- * Authentication only establishes *who* the user is. Which workspaces they can
- * open comes from their organization memberships, resolved here for the new session.
+ * Starts the local session for a Better Auth user. The local user has the **same id**
+ * as the Better Auth user, so data created while signed in belongs to that account.
  */
-function startSession(userId: string) {
+export function startLocalSession(account: AuthUser): User {
+  const existing = getState().users.find((u) => u.id === account.id);
+  const user: User = {
+    id: account.id,
+    name: account.name,
+    email: account.email.toLowerCase(),
+    title: existing?.title ?? account.title ?? "Team member",
+    color: existing?.color ?? account.color ?? "#5B5CF6",
+    avatarUrl: existing?.avatarUrl ?? account.image ?? undefined,
+    createdAt: existing?.createdAt ?? now(),
+  };
   setState((s) => {
-    const next = { ...s, session: { userId, signedInAt: now() } };
-    return { ...next, activeOrganizationId: resolveActiveOrganizationId(next, userId) };
+    const users = existing ? s.users.map((u) => (u.id === user.id ? { ...u, name: user.name, email: user.email } : u)) : [...s.users, user];
+    const next = { ...s, users, session: { userId: user.id, signedInAt: now() } };
+    return { ...next, activeOrganizationId: resolveActiveOrganizationId(next, user.id) };
   });
   flushPersistence();
-}
-
-/**
- * Demo sign-in (any password). The login page only uses it for seeded demo emails
- * without a real account — see `isDemoLoginAllowed`. Real accounts use `signInAccount`.
- */
-export function signIn(email: string): User {
-  const normalized = email.trim().toLowerCase();
-  const state = getState();
-  const existing =
-    normalized === DEMO_CREDENTIALS.email
-      ? state.users.find((u) => u.id === CURRENT_USER_ID)
-      : state.users.find((u) => u.email.toLowerCase() === normalized);
-  if (existing) {
-    startSession(existing.id);
-    return existing;
-  }
-  return signUp(nameFromEmail(normalized), normalized);
-}
-
-/**
- * Enters the mock app for a real (Better Auth) account. A returning account finds
- * the mock person created on its first sign-in (with the workspaces it made); a new
- * account gets a fresh person with no workspaces, so it lands on onboarding.
- * Demo people use reserved `.test` emails, so a real account never takes one over.
- */
-export function signInAccount(account: { email: string; name: string }): User {
-  const normalized = account.email.trim().toLowerCase();
-  const existing = getState().users.find((u) => u.email.toLowerCase() === normalized);
-  if (existing) {
-    startSession(existing.id);
-    return existing;
-  }
-  return signUp(account.name, normalized);
-}
-
-export function signUp(name: string, email: string): User {
-  const state = getState();
-  const user: User = {
-    id: uid("u"),
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    title: "Team member",
-    color: AVATAR_COLORS[state.users.length % AVATAR_COLORS.length],
-    createdAt: now(),
-  };
-  setState((s) => ({ ...s, users: [...s.users, user] }));
-  startSession(user.id);
   return user;
 }
 
-export function signInWithGoogle(): User {
-  return signIn(DEMO_CREDENTIALS.email);
-}
-
-export function signOut() {
+/** Ends the local session (the Better Auth session is ended separately with `authClient.signOut()`). */
+export function endLocalSession() {
+  if (!getState().session) return;
   setState((s) => ({ ...s, session: null }));
   flushPersistence();
 }

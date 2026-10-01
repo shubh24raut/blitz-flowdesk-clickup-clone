@@ -6,20 +6,17 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AuthCard, GoogleIcon, OrDivider } from "@/components/auth/auth-card";
+import { AuthCard } from "@/components/auth/auth-card";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { firstName } from "@/lib/utils";
-import { signInAccount, signInWithGoogle } from "@/store/actions/auth";
-import { demoEmails } from "@/store/seed";
+import { startLocalSession } from "@/store/actions/auth";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Please enter your full name"),
-  email: z
-    .email("Enter a valid work email")
-    .refine((email) => !demoEmails().includes(email.trim().toLowerCase()), { message: "This address belongs to a demo account — use your own email" }),
+  email: z.email("Enter a valid work email"),
   password: z
     .string()
     .min(8, "Use at least 8 characters")
@@ -38,8 +35,8 @@ export default function SignupPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", password: "" } });
 
   /**
-   * Creates a real account (Better Auth). The app itself still runs on mock data:
-   * the new account starts with no workspaces and goes to onboarding.
+   * Better Auth creates the account and signs it in (session cookie). The new user has
+   * no workspaces yet, so the app shell sends them to onboarding.
    */
   async function onSubmit(values: FormValues) {
     const { data, error } = await authClient.signUp.email({ name: values.name.trim(), email: values.email, password: values.password });
@@ -51,9 +48,9 @@ export default function SignupPage() {
       }
       return;
     }
-    const user = signInAccount({ email: data.user.email, name: data.user.name });
+    const user = startLocalSession(data.user);
     toast.success(`Account created — welcome to FlowDesk, ${firstName(user.name)}!`);
-    router.push("/dashboard");
+    router.push("/onboarding");
   }
 
   return (
@@ -83,19 +80,6 @@ export default function SignupPage() {
           Create account
         </Button>
       </form>
-      <OrDivider />
-      <Button
-        variant="secondary"
-        size="lg"
-        className="w-full"
-        onClick={() => {
-          signInWithGoogle();
-          router.push("/dashboard");
-        }}
-      >
-        <GoogleIcon />
-        Sign up with Google
-      </Button>
     </AuthCard>
   );
 }

@@ -5,8 +5,11 @@ import type { Activity, AppState, ID, WorkspaceState } from "@/types";
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
+/** The signed-in user. Every mutation runs on behalf of someone, so there is no anonymous fallback. */
 export function actorId(state: AppState): ID {
-  return currentUserId(state);
+  const id = currentUserId(state);
+  if (!id) throw new Error("Not signed in.");
+  return id;
 }
 
 /** The active organization's id. Actions that create org-owned records require one. */

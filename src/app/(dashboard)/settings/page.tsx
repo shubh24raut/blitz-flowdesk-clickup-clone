@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, Layers, LogOut, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
+import { Check, Layers, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { useLogout } from "@/hooks/use-logout";
 import { PageHeader } from "@/components/shared/page-header";
@@ -11,7 +11,6 @@ import { OrganizationSettings } from "@/components/settings/organization-setting
 import { ProfileSettings } from "@/components/settings/profile-settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LANGUAGES } from "@/constants";
 import { cn } from "@/lib/utils";
-import { resetDemoData, updateNotificationPreferences, updateSettings } from "@/store/actions/settings";
+import { updateNotificationPreferences, updateSettings } from "@/store/actions/settings";
 import { useWorkspace } from "@/store/hooks";
 import type { NotificationPreferences, ThemePreference } from "@/types";
 
@@ -46,7 +45,6 @@ function SettingsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const logout = useLogout();
-  const [confirmReset, setConfirmReset] = useState(false);
   const requested = params.get("tab");
   const tab: Tab = TABS.includes(requested as Tab) ? (requested as Tab) : "profile";
 
@@ -154,19 +152,11 @@ function SettingsContent() {
 
             <TabsContent value="data" className="space-y-5">
               <div>
-                <h2 className="font-semibold">Demo data</h2>
+                <h2 className="font-semibold">Data &amp; session</h2>
                 <p className="text-sm text-muted-foreground">
-                  FlowDesk is running in demo mode — everything is stored in this browser&apos;s local storage.
+                  Your account is stored securely on the server. Workspace data (clients, projects, tasks, time off) is still kept in this
+                  browser until it moves to the database.
                 </p>
-              </div>
-              <div className="flex flex-col gap-3 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium">Reset demo data</p>
-                  <p className="text-xs text-muted-foreground">Restore the original sample clients, projects and tasks.</p>
-                </div>
-                <Button variant="secondary" onClick={() => setConfirmReset(true)}>
-                  <RotateCcw /> Reset
-                </Button>
               </div>
               <div className="flex flex-col gap-3 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -181,17 +171,6 @@ function SettingsContent() {
           </CardContent>
         </Card>
       </Tabs>
-      <ConfirmDialog
-        open={confirmReset}
-        onOpenChange={setConfirmReset}
-        title="Reset demo data?"
-        description="All changes will be replaced by the original sample data."
-        confirmLabel="Reset data"
-        onConfirm={() => {
-          resetDemoData();
-          toast.success("Demo data restored");
-        }}
-      />
     </div>
   );
 }
